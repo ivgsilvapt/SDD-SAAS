@@ -27,6 +27,8 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
    - [3.5 SAAS_PATTERNS.md — Padrões Específicos de SaaS](#35-saas_patternsmd--padrões-específicos-de-saas)
    - [3.6 GLOSSARY_TEMPLATE.md — Ubiquitous Language](#36-glossary_templatemd--ubiquitous-language)
 4. [Preparando um Novo Projeto SaaS](#4-preparando-um-novo-projeto-saas)
+   - [Opção A: Skill `/init-sdd-saas` (recomendado)](#opção-a-inicialização-com-a-skill-init-sdd-saas)
+   - [Opção B: Inicialização Manual (passo a passo)](#opção-b-inicialização-manual-passo-a-passo)
    - [Passo 1: Criar a estrutura de pastas](#passo-1-criar-a-estrutura-de-pastas)
    - [Passo 2: Copiar os arquivos do kit](#passo-2-copiar-os-arquivos-do-kit)
    - [Passo 3: Criar o CLAUDE.md](#passo-3-criar-o-claudemd)
@@ -724,6 +726,71 @@ A tabela do [bounded context](#bounded-context-contexto-delimitado) `action-plan
 
 ## 4. Preparando um Novo Projeto SaaS
 
+Você tem duas opções para inicializar um novo projeto com o kit:
+
+| | Opção A — Skill (recomendado) | Opção B — Manual (passo a passo) |
+|---|---|---|
+| **Como usar** | Um único comando `/init-sdd-saas` | Execute 5 passos em sequência |
+| **Pré-requisito** | Instalar a skill uma vez | Nenhum |
+| **Ideal para** | Projetos novos — setup em minutos | Aprendizado ou personalização durante o setup |
+
+> **Primeira vez usando o kit?** Siga a **Opção B** para entender o que cada passo faz. Nas próximas vezes, use a Opção A — ela faz tudo automaticamente.
+
+---
+
+### Opção A: Inicialização com a Skill `/init-sdd-saas`
+
+A skill `/init-sdd-saas` cria toda a estrutura do projeto, copia os arquivos do kit, configura os slash commands e gera `CLAUDE.md`, `STATE.md` e `PROJECT.md` com os dados do seu projeto — em uma única conversa com o Claude Code.
+
+#### Instalação da skill (faça uma vez por máquina)
+
+A skill está em `Skills/init-sdd-saas.md` no repositório do kit. Para torná-la disponível em **qualquer projeto** do seu computador, copie-a para a pasta de comandos globais do Claude Code:
+
+**Linux / macOS:**
+```bash
+mkdir -p ~/.claude/commands
+cp /caminho/para/sdd-saas/Skills/init-sdd-saas.md ~/.claude/commands/
+```
+
+**Windows (PowerShell):**
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\commands"
+Copy-Item "C:\caminho\para\sdd-saas\Skills\init-sdd-saas.md" "$env:USERPROFILE\.claude\commands\"
+```
+
+Após copiar, a skill estará disponível em qualquer projeto. Abra o Claude Code e digite `/` — `init-sdd-saas` aparecerá na lista de sugestões.
+
+#### Como usar
+
+1. Abra o Claude Code **dentro da pasta do novo projeto** (não dentro do kit)
+2. Execute:
+```
+/init-sdd-saas /caminho/para/o/kit/sdd-saas
+```
+Exemplo:
+```
+/init-sdd-saas ~/ferramentas/SDD-SAAS
+```
+
+3. A skill irá:
+   - Perguntar o nome do projeto, a stack e os bounded contexts
+   - Criar toda a estrutura de pastas
+   - Copiar todos os arquivos do kit
+   - Gerar `CLAUDE.md` preenchido com os dados do projeto
+   - Criar `STATE.md`, `PROJECT.md` e `GLOSSARY.md` por bounded context
+   - Confirmar o resultado com os próximos passos
+
+4. Após a skill concluir:
+   - Preencha `PROJECT.md` com a visão do produto
+   - Preencha `specs/[seu-dominio]/GLOSSARY.md` com os termos do negócio
+   - Use `/new-spec [descrição]` para criar a primeira feature
+
+> **Não instalou a skill ainda?** Você também pode usar a skill sem instalação global: copie `Skills/init-sdd-saas.md` para `.claude/commands/init-sdd-saas.md` dentro do projeto atual e execute `/init-sdd-saas /caminho/para/o/kit`. Isso a disponibiliza apenas neste projeto.
+
+---
+
+### Opção B: Inicialização Manual (passo a passo)
+
 Siga estes passos ao iniciar qualquer novo projeto SaaS com o kit. Cada passo referencia o anterior — execute nesta ordem.
 
 ---
@@ -785,25 +852,39 @@ meu-saas/
 ### Passo 2: Copiar os arquivos do kit
 
 **O que fazer:**
-Copie os 6 arquivos do kit para a raiz do seu projeto. Eles são a base arquitetural.
+Copie os arquivos do kit para a raiz do seu projeto. Eles são a base arquitetural.
 
 **Por que fazer:**
-Estes 6 arquivos precisam estar na raiz do projeto porque o Claude Code os lê automaticamente via o `CLAUDE.md`. Se ficarem em outro lugar, a IA não os encontrará.
+Estes arquivos precisam estar na raiz do projeto porque o Claude Code os lê automaticamente via o `CLAUDE.md`. Se ficarem em outro lugar, a IA não os encontrará.
 
 **O que acontece se não fizer:**
 Sem os arquivos do kit, cada sessão com a IA começa do zero — você precisará re-explicar toda a arquitetura, os padrões de erro, as regras de [multi-tenancy](#multi-tenant) e os padrões de testes a cada nova conversa.
 
-No terminal, dentro da pasta `meu-saas/`, execute (ajuste o caminho `../kit/` para onde você salvou os arquivos do kit):
+No terminal, dentro da pasta `meu-saas/`, execute (ajuste o caminho para onde você salvou o kit):
 ```bash
+# Arquivos de arquitetura (obrigatórios)
 cp /caminho/para/o/kit/ARCHITECTURE.md .
 cp /caminho/para/o/kit/AGENTS.md .
 cp /caminho/para/o/kit/SPEC_TEMPLATE.md .
 cp /caminho/para/o/kit/TESTING_GUIDE.md .
 cp /caminho/para/o/kit/SAAS_PATTERNS.md .
 cp /caminho/para/o/kit/GLOSSARY_TEMPLATE.md .
+
+# Templates operacionais (memória, visão, continuidade de sessão)
+cp /caminho/para/o/kit/STATE_TEMPLATE.md .
+cp /caminho/para/o/kit/PROJECT_TEMPLATE.md .
+cp /caminho/para/o/kit/ROADMAP_TEMPLATE.md .
+cp /caminho/para/o/kit/HANDOFF_TEMPLATE.md .
+cp /caminho/para/o/kit/CODEBASE_MAPPING_GUIDE.md .
 ```
 
-> Arquivos copiados. No VS Code você verá os 6 arquivos na raiz do projeto. Verifique com `ls` no terminal.
+Depois, crie os arquivos de trabalho a partir dos templates:
+```bash
+cp STATE_TEMPLATE.md STATE.md       # memória persistente — preencha ao longo do projeto
+cp PROJECT_TEMPLATE.md PROJECT.md   # visão do produto — preencha antes do primeiro SPEC
+```
+
+> Arquivos copiados. No VS Code você verá os arquivos na raiz do projeto. Verifique com `ls` no terminal.
 
 ---
 
@@ -897,16 +978,22 @@ Você precisará abrir o `AGENTS.md`, copiar o prompt do agente manualmente, col
 
 Execute no terminal (dentro da pasta `meu-saas/`), ajustando o caminho do kit:
 ```bash
-# Copie os 5 arquivos de comando para .claude/commands/
+# Agentes do fluxo principal (obrigatórios)
 cp /caminho/para/o/kit/Slash\ Commands/new-spec.md .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/impl-sprint.md .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/review-arch.md .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/test-sprint.md .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/migrate-sprint.md .claude/commands/
+
+# Comandos operacionais (Quick Mode, continuidade de sessão, brownfield)
+cp /caminho/para/o/kit/Slash\ Commands/quick-fix.md .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/pause-session.md .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/resume-session.md .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/map-codebase.md .claude/commands/
 ```
 
 > Comandos copiados. Verifique no terminal: `ls .claude/commands/`
-> Você deve ver: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`
+> Você deve ver: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`, `quick-fix.md`, `pause-session.md`, `resume-session.md`, `map-codebase.md`
 >
 > Se quiser confirmar que funcionam, abra o Claude Code no projeto e digite `/` — os comandos aparecerão na lista de sugestões.
 
@@ -919,11 +1006,11 @@ Para instruções detalhadas sobre como criar ou personalizar os comandos, veja 
 ```
 acaoplus/
 ├── .claude/
-│   └── commands/           ← 5 arquivos copiados de "Slash Commands/"
-│       ├── new-spec.md
-│       ├── impl-sprint.md
-│       ├── review-arch.md
-│       ├── test-sprint.md
+│   └── commands/           ← 9 arquivos copiados de "Slash Commands/"
+│       ├── new-spec.md       ├── quick-fix.md
+│       ├── impl-sprint.md    ├── pause-session.md
+│       ├── review-arch.md    ├── resume-session.md
+│       ├── test-sprint.md    └── map-codebase.md
 │       └── migrate-sprint.md
 ├── src/
 │   ├── presentation/
@@ -936,13 +1023,15 @@ acaoplus/
 │   └── e2e/
 ├── specs/
 │   └── action-plan/
-│       └── GLOSSARY.md     ← preenchido com os termos do AçãoPlus (ver Fase 1)
-├── ARCHITECTURE.md
-├── AGENTS.md
-├── SPEC_TEMPLATE.md
-├── TESTING_GUIDE.md
-├── SAAS_PATTERNS.md
-├── GLOSSARY_TEMPLATE.md
+│       └── GLOSSARY.md       ← preenchido com os termos do AçãoPlus (ver Fase 1)
+├── ARCHITECTURE.md            AGENTS.md
+├── SPEC_TEMPLATE.md           TESTING_GUIDE.md
+├── SAAS_PATTERNS.md           GLOSSARY_TEMPLATE.md
+├── STATE_TEMPLATE.md          PROJECT_TEMPLATE.md
+├── ROADMAP_TEMPLATE.md        HANDOFF_TEMPLATE.md
+├── CODEBASE_MAPPING_GUIDE.md
+├── STATE.md                   ← memória persistente ativa
+├── PROJECT.md                 ← visão do produto (preenchida)
 └── CLAUDE.md
 ```
 
@@ -957,9 +1046,12 @@ Leia ARCHITECTURE.md antes de qualquer ação. SaaS multi-tenant de gestão de p
 - Nunca escreva código sem SPEC aprovado em specs/
 - Consulte specs/action-plan/GLOSSARY.md para nomenclatura
 - Domínio multi-tenant: sempre use TenantContext (consulte SAAS_PATTERNS.md)
+- Commits seguem Conventional Commits (ARCHITECTURE.md seção 20)
+- Decisões arquiteturais não-óbvias: registre em STATE.md antes de fechar a sessão
 
 ## Contexto automático
 @ARCHITECTURE.md
+@STATE.md
 @specs/action-plan/GLOSSARY.md
 
 ## Tecnologias
@@ -2158,11 +2250,20 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 
 ### Fase A: Preparação do Ambiente (faça uma vez por projeto)
 
+**Opção A — Com a skill (recomendado):**
+- [ ] **Skill instalada (uma vez por máquina):** `Skills/init-sdd-saas.md` copiado para `~/.claude/commands/` conforme [Opção A da Seção 4](#opção-a-inicialização-com-a-skill-init-sdd-saas)
+- [ ] **Projeto inicializado:** Execute `/init-sdd-saas /caminho/para/o/kit` no Claude Code dentro da pasta do novo projeto — responda as perguntas sobre nome, stack e bounded contexts
+
+**Opção B — Manual (passo a passo):**
 - [ ] **Ambiente configurado:** Claude Code instalado (CLI ou extensão VS Code), Node.js instalado, VS Code aberto
 - [ ] **Estrutura de pastas criada:** Execute os comandos do [Passo 1](#passo-1-criar-a-estrutura-de-pastas): `mkdir -p src/{presentation,application,domain,infrastructure}`, `mkdir -p tests/{unit,integration,e2e}`, `mkdir -p specs`, `mkdir -p .claude/commands`
-- [ ] **Arquivos do kit copiados:** Execute os comandos do [Passo 2](#passo-2-copiar-os-arquivos-do-kit): todos os 6 arquivos (`ARCHITECTURE.md`, `AGENTS.md`, `SPEC_TEMPLATE.md`, `TESTING_GUIDE.md`, `SAAS_PATTERNS.md`, `GLOSSARY_TEMPLATE.md`) estão na raiz do projeto
-- [ ] **CLAUDE.md criado:** Crie o arquivo conforme o [Passo 3](#passo-3-criar-o-claudemd): nome do projeto, `@ARCHITECTURE.md`, tecnologias e bounded contexts preenchidos
-- [ ] **Slash commands configurados:** Execute os comandos do [Passo 5](#passo-5-criar-os-slash-commands-veja-seção-7): 5 arquivos `.md` copiados para `.claude/commands/`. Teste digitando `/` no Claude Code — os comandos devem aparecer
+- [ ] **Arquivos do kit copiados:** Execute os comandos do [Passo 2](#passo-2-copiar-os-arquivos-do-kit): arquivos de arquitetura + templates operacionais copiados para a raiz do projeto; `STATE.md` e `PROJECT.md` criados a partir dos templates
+- [ ] **CLAUDE.md criado:** Crie o arquivo conforme o [Passo 3](#passo-3-criar-o-claudemd): nome do projeto, `@ARCHITECTURE.md`, `@STATE.md`, tecnologias e bounded contexts preenchidos
+- [ ] **Slash commands configurados:** Execute os comandos do [Passo 5](#passo-5-criar-os-slash-commands-veja-seção-7): 9 arquivos `.md` copiados para `.claude/commands/`. Teste digitando `/` no Claude Code — os comandos devem aparecer
+
+**Verificação (ambas as opções):**
+- [ ] **PROJECT.md preenchido:** Vision Statement e Non-Goals definidos antes do primeiro SPEC
+- [ ] **STATE.md vazio e pronto:** Arquivo criado na raiz — será preenchido ao longo do projeto com decisões arquiteturais
 
 ---
 
