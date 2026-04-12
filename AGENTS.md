@@ -66,14 +66,56 @@ Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
 
 | Agente | Contexto obrigatório | Contexto opcional |
 |---|---|---|
-| **Spec** | `ARCHITECTURE.md` (seções 0–3) + `SPEC_TEMPLATE.md` + `GLOSSARY_TEMPLATE.md` do projeto | `SAAS_PATTERNS.md` se for feature multi-tenant |
+| **Spec** | `ARCHITECTURE.md` (seções 0–3) + `SPEC_TEMPLATE.md` + `GLOSSARY_TEMPLATE.md` do projeto | `SAAS_PATTERNS.md` se for feature multi-tenant; `PROJECT.md` + `ROADMAP.md` para User Stories alinhadas com produto |
 | **Analyze** | SPEC completo + `ARCHITECTURE.md` (seções 1 e 5) | — |
-| **Implementation Sprint 1** | `ARCHITECTURE.md` (seções 0–5) + SPRINT 1 do SPEC | `SAAS_PATTERNS.md` se modelar domínio SaaS |
-| **Implementation Sprint 2+** | `ARCHITECTURE.md` (seções 0–5) + SPRINT N do SPEC + interfaces de repositório já criadas | — |
-| **Testing** | Código do SPRINT + cenários GWT do SPRINT + `TESTING_GUIDE.md` | — |
-| **Review** | Código do SPRINT + testes do SPRINT + SPRINT N do SPEC (GWT) + `ARCHITECTURE.md` (seções 1 e 5) | — |
-| **Migration** | Entidades do SPRINT 1 + DDL atual do banco + `ARCHITECTURE.md` (seções 13 e 19) | — |
+| **Implementation Sprint 1** | `ARCHITECTURE.md` (seções 0–5) + SPRINT 1 do SPEC | `SAAS_PATTERNS.md` se modelar domínio SaaS; `.specs/codebase/STACK.md` + `CONVENTIONS.md` em projetos brownfield |
+| **Implementation Sprint 2+** | `ARCHITECTURE.md` (seções 0–5) + SPRINT N do SPEC + interfaces de repositório já criadas | `.specs/codebase/STACK.md` + `CONVENTIONS.md` + `ARCHITECTURE.md` (codebase) em brownfield |
+| **Implementation (infra/integração)** | `ARCHITECTURE.md` (seções 0–5) + SPRINT N + `.specs/codebase/INTEGRATIONS.md` | `.specs/codebase/STACK.md` para versões de SDK/libs externas |
+| **Testing** | Código do SPRINT + cenários GWT do SPRINT + `TESTING_GUIDE.md` | `.specs/codebase/TESTING.md` em brownfield (para reutilizar helpers existentes) |
+| **Review** | Código do SPRINT + testes do SPRINT + SPRINT N do SPEC (GWT) + `ARCHITECTURE.md` (seções 1 e 5) | `.specs/codebase/CONCERNS.md` em brownfield (para distinguir legado de nova violação) |
+| **Migration** | Entidades do SPRINT 1 + DDL atual do banco + `ARCHITECTURE.md` (seções 13 e 19) | `.specs/codebase/STACK.md` para versão exata do ORM/banco |
 | **Implementation (jobs)** | `ARCHITECTURE.md` (seções 0–5 e 19) + SPRINT N do SPEC | `SAAS_PATTERNS.md` se o job iterar sobre tenants |
+| **Qualquer agente (retomada)** | Se `HANDOFF.md` existir na raiz, leia-o antes de agir — representa o estado exato da sessão anterior | — |
+
+---
+
+## Gerenciamento de Contexto e Delegação
+
+### Budget de tokens por agente (estimativas para sessão típica)
+
+| Agente | Contexto estimado | Saída estimada | Total |
+|---|---|---|---|
+| Spec | ~6–8k tokens | ~3k (SPEC) | ~10k |
+| Analyze | ~5k (SPEC + Arch 1+5) | ~800 (relatório) | ~6k |
+| Implementation Sprint 1 | ~8–10k (Arch 0–5 + SPRINT) | ~5–8k (código + testes TDD) | ~18k |
+| Implementation Sprint 2+ | ~10–12k (Arch + SPRINT + interfaces) | ~5–8k | ~20k |
+| Testing | ~6k (código + GWT + guia) | ~4k (testes) | ~10k |
+| Review | ~8k (código + testes + Arch + SPRINT) | ~1k (relatório) | ~9k |
+| Migration | ~4k (entidades + DDL + Arch 13) | ~1k (SQL) | ~5k |
+
+**Meta:** manter o total de contexto de entrada abaixo de 40k tokens. Reserve o restante para raciocínio e geração.
+
+### Divisão em sub-SPRINTs
+
+Quando um SPRINT tem **mais de 5 FRs** ou vai criar **mais de 6 arquivos novos**:
+
+```
+SPRINT 1 (8 FRs)
+  → SPRINT 1a: FRs 001–004
+  → SPRINT 1b: FRs 005–008
+```
+
+- Implemente e revise `1a` antes de iniciar `1b`
+- O Agente Implementation deve propor a divisão proativamente ao receber um SPRINT grande
+- Cada sub-SPRINT gera um commit próprio
+
+### Sinais de alerta de contexto excessivo
+
+Se qualquer sinal abaixo aparecer, use `/pause-session` imediatamente:
+- Resposta genérica sem referência ao SPEC ou bounded context
+- Confusão entre FRs de SPRINTs diferentes
+- Proposta de padrão já descartado (registrado no STATE.md)
+- Resposta incompleta ou truncada
 
 ---
 
@@ -86,6 +128,47 @@ Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
 | Agente Review retorna `APROVADO COM RESSALVAS` | Registre as ressalvas no SPEC, avance para o próximo SPRINT |
 | Agente Testing detecta cenário GWT sem teste | Implemente o teste faltante antes de avançar |
 | Agente Implementation gera código fora do escopo do SPRINT | Remova o código extra, re-execute apenas o SPRINT correto |
+| Decisão arquitetural não-óbvia foi tomada | Registre em `STATE.md` (Seção 1) antes de fechar a sessão |
+| Contexto esgotando / resposta genérica | Use `/pause-session`, reinicie nova sessão com contexto mínimo |
+
+---
+
+## Quick Mode — `/quick-fix`
+
+Para correções pequenas que não justificam um SPEC completo. O Quick Mode **não bypassa as regras arquiteturais** — bypassa apenas a cerimônia de criação de SPEC.
+
+### Quando usar `/quick-fix`
+
+Use quando **TODAS** as condições abaixo forem verdadeiras:
+- A mudança afeta no máximo 3 arquivos
+- Não cria nova entidade de domínio, value object ou use case
+- Não requer migration de banco de dados
+- Não altera contrato de API de forma quebrante
+- Não envolve lógica multi-tenancy nova
+
+### Quando NÃO usar (redirecione para `/new-spec`)
+
+- Qualquer nova entidade, use case, repositório ou migration
+- Mudança que afeta mais de 3 arquivos
+- Mudança que coordena dois ou mais bounded contexts
+- Nova rota ou endpoint de API
+
+### O que permanece obrigatório no Quick Mode
+
+Todas as regras críticas da seção 1.1 do ARCHITECTURE.md continuam em vigor:
+- Separação de camadas (sem ORM no domínio)
+- Sem instanciação direta de dependências
+- Sem null silencioso (Result<T,E>)
+- Sem SQL concatenado com input
+- Sem acesso a dados sem filtro por tenantId
+
+### Saída do Quick Mode
+
+O Agente Quick Fix sempre entrega:
+1. Lista dos arquivos alterados
+2. Código da correção
+3. Como verificar que funciona
+4. Mensagem de commit no formato `fix(scope): descrição`
 
 ---
 
@@ -269,6 +352,31 @@ Anti-patterns a evitar:
 - Não concatene strings de input do usuário em queries SQL.
 - Não exponha entidades de domínio diretamente no ViewModel.
 - Antes de criar qualquer interface, entidade, value object ou repositório, pesquise se já existe (Glob/Grep). Nunca crie duplicata.
+
+### Protocolo de Verificação de Conhecimento
+
+Antes de usar qualquer biblioteca ou framework externo neste SPRINT, siga esta cadeia em ordem. Avance ao próximo nível apenas se o atual não fornecer certeza suficiente:
+
+**Nível 1 — Busca no codebase (mais rápido e confiável)**
+Use Glob e Grep para encontrar usos existentes da biblioteca no projeto. Se encontrar, replique exatamente o padrão existente — ele reflete a versão real em produção.
+
+**Nível 2 — Documentação do kit**
+Verifique `.specs/codebase/STACK.md` (se disponível) para a versão exata instalada. Consulte `ARCHITECTURE.md` e `SAAS_PATTERNS.md` para padrões estabelecidos.
+
+**Nível 3 — Documentação do projeto**
+Verifique README.md, `docs/` ou qualquer documentação de integração no repositório.
+
+**Nível 4 — Busca externa (use Context7 MCP ou web search se disponível)**
+Especifique sempre a versão na busca — nunca pesquise apenas pelo nome da biblioteca. Ex: "prisma 5.x findMany with cursor pagination" em vez de "prisma pagination".
+
+**Nível 5 — Flag e pergunta (obrigatório quando nenhum nível deu certeza)**
+Informe explicitamente ao desenvolvedor:
+> "Não encontrei confirmação da API correta para [biblioteca] versão [X].
+> Encontrei: [o que encontrou ou "nada"].
+> Posso: (a) usar o padrão existente no codebase [mostra exemplo], ou (b) aguardar sua confirmação antes de implementar.
+> Qual prefere?"
+
+**Regra especial de segurança:** Para bibliotecas de **pagamento, autenticação ou criptografia**, apenas as opções (a) ou (b) são permitidas. Nunca gere código com comentário `// VERIFY` nessas áreas — o risco de bug silencioso é inaceitável.
 ```
 
 ---
@@ -409,6 +517,12 @@ Formato do relatório:
 ### Próximo passo
 [se APROVADO: "Execute /impl-sprint [spec] [n+1] para o próximo SPRINT"]
 [se REPROVADO: "Corrija as violações críticas e execute /review-arch [spec] [n] novamente"]
+
+### Commit Sugerido
+[Inclua esta seção somente quando o veredicto for APROVADO ou APROVADO COM RESSALVAS]
+Mensagem pronta para copiar e usar no terminal:
+`type(bounded-context): descrição imperativa em português [slug-do-spec]`
+Escolha o type conforme ARCHITECTURE.md seção 20 (feat para SPRINT novo, test se foi apenas testes, refactor se foi ciclo de melhoria).
 ```
 
 ---
@@ -481,3 +595,9 @@ Anti-patterns a evitar:
 | Dúvida sobre background jobs | — | Consulte ARCHITECTURE.md seção 19 + SAAS_PATTERNS.md seção 10 |
 | Dúvida sobre eventos entre BCs / Outbox | — | Consulte ARCHITECTURE.md seção 19 (Outbox Pattern) |
 | Dúvida sobre transações multi-repositório | — | Consulte ARCHITECTURE.md seção 7 (Unit of Work) |
+| Correção pequena (≤3 arquivos, sem novo SPEC) | — | `/quick-fix [descrição]` |
+| Salvar estado da sessão atual | — | `/pause-session` |
+| Retomar sessão anterior | — | `/resume-session` |
+| Mapear codebase existente (brownfield) | — | `/map-codebase` |
+| Dúvida sobre padrão de commits | — | Consulte ARCHITECTURE.md seção 20 |
+| Decisão arquitetural tomada nesta sessão | — | Registre em `STATE.md` antes de fechar |

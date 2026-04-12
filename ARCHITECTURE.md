@@ -8,6 +8,9 @@ Este documento é a **Constitution** deste SaaS. Deve ser fornecido à IA no in�
 - `TESTING_GUIDE.md` — estratégia de testes por camada
 - `SAAS_PATTERNS.md` — padrões específicos para SaaS (multi-tenancy, billing, GDPR)
 - `GLOSSARY_TEMPLATE.md` — template de Ubiquitous Language por bounded context
+- `STATE_TEMPLATE.md` — memória persistente do projeto (decisões, bloqueios, ideias adiadas)
+- `PROJECT_TEMPLATE.md` — visão de produto e propósito do SaaS
+- `ROADMAP_TEMPLATE.md` — roadmap de features e milestones
 
 ---
 
@@ -40,6 +43,7 @@ Constitution (este arquivo) → Specify → Clarify → Checklist → Plan → T
 9. A lógica transversal (logging, auditoria, segurança) vai para middleware — não para o domínio.
 10. Este SPEC envolve múltiplos tenants? Se sim, consulte `SAAS_PATTERNS.md` antes de modelar o domínio.
 11. Quais testes são necessários para este SPRINT? Consulte `TESTING_GUIDE.md`.
+12. Para cada biblioteca externa usada neste SPRINT: existe exemplo de uso no codebase? Se não, qual é a versão exata em uso (veja `.specs/codebase/STACK.md` se disponível)? Siga o Protocolo de Verificação de Conhecimento do `AGENTS.md` antes de implementar.
 
 Se não conseguir responder todas, pergunte ao usuário antes de gerar código.
 
@@ -823,9 +827,34 @@ Para minimizar custo de tokens ao usar AI agents, forneça apenas o contexto nec
 
 **Regras de ouro:**
 - Nunca forneça a codebase inteira para um agente — forneça apenas os arquivos do SPRINT atual
-- SPRINTs com mais de 6 entidades ou 8 FRs devem ser divididos em sub-SPRINTs
+- SPRINTs com mais de 5 FRs ou 6+ arquivos novos devem ser divididos em sub-SPRINTs (1a, 1b...)
 - Execute o Checklist de Cobertura do SPEC antes de pedir implementação — evita regeneração custosa
 - Aprovação humana do SPEC antes do Analyze elimina ciclos de correção desnecessários
+
+**Ordem correta de carregamento de contexto (do mais para o menos prioritário):**
+1. `ARCHITECTURE.md` seções relevantes — as restrições devem ser carregadas primeiro
+2. `STATE.md` — decisões acumuladas do projeto
+3. SPEC/SPRINT específico — o contrato de comportamento a implementar
+4. Interfaces e entidades existentes — referências do código já criado
+
+**Sinais de alerta de contexto excessivo:**
+
+Se qualquer sinal abaixo aparecer durante uma sessão, **pause com `/pause-session`** e reinicie com contexto mínimo:
+
+| Sinal | Provável causa | Ação |
+|---|---|---|
+| Agente responde de forma genérica, sem citar o SPEC | Contexto muito grande, SPEC perdido no meio | `/pause-session` → reinicie com SPEC + ARCHITECTURE.md seções 0–5 |
+| Agente confunde FRs de SPRINTs diferentes | SPEC inteiro carregado quando só um SPRINT era necessário | Forneça apenas a seção do SPRINT atual |
+| Agente "esquece" regra que citou no início da sessão | Janela de contexto esgotando | `/pause-session` imediatamente |
+| Agente propõe padrão já descartado (registrado no STATE.md) | STATE.md não foi carregado | Reinicie incluindo `@STATE.md` |
+
+**Divisão em sub-SPRINTs (para SPRINTs grandes):**
+
+Quando um SPRINT tem mais de 5 FRs ou vai criar mais de 6 arquivos novos:
+1. Divida em `SPRINT Na` (FRs 001–003) e `SPRINT Nb` (FRs 004+)
+2. Implemente e revise Na antes de iniciar Nb
+3. Cada sub-SPRINT gera seu próprio commit: `feat(scope): [descrição] [spec] - sprint Na`
+4. Ao concluir todos os sub-SPRINTs de um SPRINT, faça um commit de merge: `feat(scope): completa SPRINT N [spec]`
 
 ---
 
@@ -983,3 +1012,64 @@ CREATE TABLE outbox_events (
 - O worker usa `SELECT ... FOR UPDATE SKIP LOCKED` para evitar processamento duplo em múltiplas instâncias
 - Eventos com mais de `MAX_ATTEMPTS` falhas são movidos para dead-letter (tabela `outbox_dead_letter`)
 - O Outbox é necessário **apenas para comunicação entre BCs** — eventos dentro do mesmo BC são síncronos e não precisam de Outbox
+
+---
+
+## 20. Conventional Commits
+
+Todo commit neste projeto segue o padrão **Conventional Commits 1.0.0**.
+
+### Formato obrigatório
+
+```
+type(scope): descrição [spec-ref]
+```
+
+- **type** — categoria da mudança (tabela abaixo)
+- **scope** — bounded context afetado (ex: `billing`, `auth`, `tenant`, `action-plan`)
+- **descrição** — imperativo, em português, sem ponto final, máx. 72 caracteres
+- **spec-ref** — slug do arquivo SPEC, entre colchetes, opcional mas recomendado
+
+**Exemplo:**
+```
+feat(billing): implementa cancelamento de assinatura por inadimplência [create-subscription]
+fix(auth): corrige validação de JWT expirado no middleware de tenant
+test(action-plan): adiciona cobertura GWT para FR-004 e FR-005
+chore(infra): cria migration 20251001_120000_add_tenant_id_to_invoices
+```
+
+### Tabela de tipos
+
+| Tipo | Quando usar |
+|---|---|
+| `feat` | Nova funcionalidade proveniente de SPEC/SPRINT aprovado |
+| `fix` | Correção de bug, incluindo correções via `/quick-fix` |
+| `refactor` | Melhoria de código sem mudança de comportamento (ciclo REFACTOR do TDD) |
+| `test` | Adição ou correção de testes (sem mudança no código de produção) |
+| `docs` | Mudanças em documentação (SPECs, ARCHITECTURE.md, GLOSSARY.md) |
+| `chore` | Migrations de banco, configurações, scripts de tooling |
+| `ci` | Mudanças em pipelines de CI/CD |
+
+### Regras
+
+- **1 commit por SPRINT** aprovado (ou por FR, se o SPRINT for dividido em sub-SPRINTs)
+- **Corrections via `/quick-fix`** usam sempre tipo `fix(scope):`
+- **Migrations** usam `chore(infra):` com o nome do arquivo de migration na descrição
+- **Nunca commite** código de um SPRINT que recebeu `REPROVADO` do Agente Review
+- **O idioma** da mensagem de commit segue o idioma principal de desenvolvimento do projeto
+- **O Agente Review** sugere automaticamente a mensagem de commit ao emitir veredicto `APROVADO`
+
+### Integração com o fluxo SDD
+
+```
+SPRINT implementado + testes gerados
+           │
+           ▼
+   Agente Review → APROVADO
+           │
+           ▼
+   "Commit Sugerido:" feat(scope): descrição [spec-ref]
+           │
+           ▼
+   git commit -m "feat(scope): descrição [spec-ref]"
+```
