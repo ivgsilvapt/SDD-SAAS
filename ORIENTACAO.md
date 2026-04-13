@@ -26,6 +26,8 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
    - [3.4 TESTING_GUIDE.md — Estratégia de Testes](#34-testing_guidemd--estratégia-de-testes)
    - [3.5 SAAS_PATTERNS.md — Padrões Específicos de SaaS](#35-saas_patternsmd--padrões-específicos-de-saas)
    - [3.6 GLOSSARY_TEMPLATE.md — Ubiquitous Language](#36-glossary_templatemd--ubiquitous-language)
+   - [3.7 GIT_WORKFLOW.md — Estratégia de Branches por SPEC](#37-git_workflowmd--estratégia-de-branches-por-spec)
+   - [3.8 KNOWLEDGE_TEMPLATE.md — Registro de Lições Aprendidas](#38-knowledge_templatemd--registro-de-lições-aprendidas)
 4. [Preparando um Novo Projeto SaaS](#4-preparando-um-novo-projeto-saas)
    - [Opção A: Skill `/init-sdd-saas` (recomendado)](#opção-a-inicialização-com-a-skill-init-sdd-saas)
    - [Opção B: Inicialização Manual (passo a passo)](#opção-b-inicialização-manual-passo-a-passo)
@@ -256,7 +258,7 @@ O kit garante que a IA siga as mesmas regras arquiteturais em todas as sessões,
 
 ## 3. Os Arquivos do Kit
 
-O kit contém 6 arquivos que trabalham em conjunto. Cada um tem um papel específico.
+O kit contém arquivos de referência arquitetural que trabalham em conjunto. Cada um tem um papel específico.
 
 ---
 
@@ -310,9 +312,9 @@ Se precisar personalizar alguma regra (ex: a empresa usa MongoDB em vez de Postg
 
 ---
 
-### 3.2 AGENTS.md — Os 6 Agentes do Fluxo
+### 3.2 AGENTS.md — Os Agentes do Fluxo
 
-**O que é:** Define os 6 agentes especializados do fluxo SDD, com seus prompts completos, regras de entrada/saída, contexto mínimo necessário e anti-patterns a evitar.
+**O que é:** Define os agentes especializados do fluxo SDD, com seus prompts completos, regras de entrada/saída, contexto mínimo necessário e anti-patterns a evitar. Inclui também Phase Guards (limites explícitos de escopo por agente), Crash Recovery Protocol, Token Profiles e Multi-Model Routing.
 
 **Por que fazer:**
 Cada agente tem uma responsabilidade única. Usar o agente certo para cada etapa garante que a IA não misture responsabilidades (ex: implementar código enquanto faz análise do SPEC).
@@ -322,7 +324,7 @@ Sem os agentes definidos, você acaba pedindo para a mesma IA "criar SPEC E impl
 
 **Quando usar:** Consulte este arquivo para copiar o prompt do agente antes de iniciar cada etapa. Na prática, se você configurar os slash commands ([seção 7](#7-configurando-os-agentes-como-slash-commands)), não precisará abrir este arquivo — os prompts já estarão nos comandos.
 
-**Os 6 agentes:**
+**Os agentes:**
 
 | Agente | Responsabilidade | Acionado por |
 |---|---|---|
@@ -332,6 +334,13 @@ Sem os agentes definidos, você acaba pedindo para a mesma IA "criar SPEC E impl
 | **Testing** | Gera testes para o [SPRINT](#sprint) implementado | `/test-sprint [spec] [n]` |
 | **Review** | Valida código e testes contra ARCHITECTURE.md | `/review-arch [spec] [n]` |
 | **Migration** | Gera scripts SQL de migration | `/migrate-sprint [spec] [n]` |
+| **Forense** | Diagnostica SPRINTs com falha (Review REPROVADO ou testes persistentes) | `/forensics-sprint [spec] [n]` |
+
+**Phase Guards — limites de escopo por agente:**
+Cada agente no `AGENTS.md` tem uma seção "Limites de Escopo" com o que o agente PODE e NÃO PODE fazer. Por exemplo: o Agente Implementation NÃO PODE criar arquivos fora das camadas definidas no ARCHITECTURE.md, implementar FRs de outros SPRINTs ou tomar decisões arquiteturais não previstas sem pausar. Estes limites previnem scope creep silencioso.
+
+**Token Profiles e Multi-Model Routing:**
+O `AGENTS.md` inclui perfis de execução (Budget/Balanced/Quality) para controlar o custo por sessão, e recomendações de modelo por agente. Agentes de raciocínio complexo (Implementation, Review) devem sempre usar o melhor modelo disponível — o custo de um erro nesses agentes supera o custo do modelo.
 
 **Contexto mínimo por agente (economize tokens):**
 
@@ -724,6 +733,53 @@ A tabela do [bounded context](#bounded-context-contexto-delimitado) `action-plan
 
 ---
 
+### 3.7 GIT_WORKFLOW.md — Estratégia de Branches por SPEC
+
+**O que é:** Documenta a convenção de branches por SPEC (`spec/<slug>`), quando usar git worktrees para trabalho paralelo, como tratar correções via `/quick-fix` e a tabela de mapeamento entre ações do fluxo SDD-SAAS e comandos git.
+
+**Por que fazer:**
+Sem uma convenção de branches, SPECs concluídas e em andamento se misturam no histórico do git. A rastreabilidade "qual commit pertence a qual SPEC" desaparece, tornando rollback e revisão muito mais difíceis.
+
+**O que acontece se não fizer:**
+Commits de diferentes features ficam misturados. Se o Agente Review reprovar um SPRINT e você precisar reverter, não saberá quais commits pertencem àquela feature. Com branches por SPEC, um `git checkout -- .` ou `git revert` é sempre seguro e rastreável.
+
+**Quando usar:** Leia uma vez ao iniciar o projeto. Os agentes SDD-SAAS não enforçam git — este arquivo é documentação de referência para o desenvolvedor.
+
+**Estrutura do arquivo:**
+
+| Seção | O que contém |
+|---|---|
+| **1. Branches por SPEC** | Convenção `spec/<slug>`, regras de criação e merge |
+| **2. Worktrees (avançado)** | Como trabalhar em duas SPECs simultâneas sem stash |
+| **3. Quick-Fix** | Correções vão para `fix/<desc>` ou direto para main |
+| **4. Mapeamento** | Tabela: evento SDD-SAAS → ação git correspondente |
+| **5. Equipes** | Múltiplos desenvolvedores com branches isolados |
+
+---
+
+### 3.8 KNOWLEDGE_TEMPLATE.md — Registro de Lições Aprendidas
+
+**O que é:** Template append-only para registrar lições entre sessões — descobertas, padrões que funcionaram, anti-padrões a evitar e gotchas de APIs externas. Copiado como `KNOWLEDGE.md` durante a inicialização do projeto.
+
+**Por que fazer:**
+O STATE.md registra decisões arquiteturais. O KNOWLEDGE.md registra *aprendizados empíricos* — o que a IA fez errado repetidamente, qual padrão resolveu um problema específico, qual API tem um gotcha documentado. Sem esse registro, a mesma sessão descobre as mesmas coisas toda vez.
+
+**O que acontece se não fizer:**
+Você gasta tokens diagnosticando o mesmo problema que já foi resolvido. A IA repete anti-padrões porque não tem memória da sessão anterior. Com o KNOWLEDGE.md, o Agente `/forensics-sprint` consegue identificar se um problema é um padrão já documentado.
+
+**Quando usar:** O `/pause-session` solicita que você registre aprendizados não óbvios da sessão. O `/resume-session` lê o KNOWLEDGE.md antes de retomar. É contexto opcional, mas leia-o antes de implementar qualquer feature em área que já teve problemas.
+
+**Estrutura do arquivo:**
+
+| Seção | O que contém |
+|---|---|
+| **1. Discoveries** | Tabela: Data / Área / Descoberta / Lição |
+| **2. Patterns That Worked** | Tabela: Data / Contexto / Padrão / Por que funcionou |
+| **3. Patterns to Avoid** | Tabela: Data / Anti-Padrão / Por que falhou / Abordagem Correta |
+| **4. External API Gotchas** | Tabela: Serviço / Versão / Gotcha / Workaround |
+
+---
+
 ## 4. Preparando um Novo Projeto SaaS
 
 Você tem duas opções para inicializar um novo projeto com o kit:
@@ -876,12 +932,17 @@ cp /caminho/para/o/kit/PROJECT_TEMPLATE.md .
 cp /caminho/para/o/kit/ROADMAP_TEMPLATE.md .
 cp /caminho/para/o/kit/HANDOFF_TEMPLATE.md .
 cp /caminho/para/o/kit/CODEBASE_MAPPING_GUIDE.md .
+
+# Novos arquivos (adicionados na integração GSD2)
+cp /caminho/para/o/kit/GIT_WORKFLOW.md .          # estratégia de branches por SPEC
+cp /caminho/para/o/kit/KNOWLEDGE_TEMPLATE.md KNOWLEDGE.md  # lições aprendidas entre sessões
 ```
 
 Depois, crie os arquivos de trabalho a partir dos templates:
 ```bash
 cp STATE_TEMPLATE.md STATE.md       # memória persistente — preencha ao longo do projeto
 cp PROJECT_TEMPLATE.md PROJECT.md   # visão do produto — preencha antes do primeiro SPEC
+# KNOWLEDGE.md já foi criado acima a partir do KNOWLEDGE_TEMPLATE.md
 ```
 
 > Arquivos copiados. No VS Code você verá os arquivos na raiz do projeto. Verifique com `ls` no terminal.
@@ -1963,10 +2024,16 @@ Sem o fechamento formal, você não sabe o que foi ou não foi implementado. Em 
 | `/test-sprint [spec] [n]` | Agente Testing | Após implementar [SPRINT](#sprint) N | Código do SPRINT + [GWT](#given-when-then-gwt) do SPRINT + `TESTING_GUIDE.md` |
 | `/review-arch [spec] [n]` | Agente Review | Após gerar testes do [SPRINT](#sprint) N | Código + testes + SPRINT N do SPEC + `ARCHITECTURE.md` seções 1 e 5 |
 | `/migrate-sprint [spec] [n]` | Agente Migration | [SPRINT](#sprint) 1 e/ou 3 com impacto em banco | Entidades + "Impacto em Banco" do SPRINT + `ARCHITECTURE.md` seção 13 |
+| `/forensics-sprint [spec] [n]` | Agente Forense | SPRINT com Review REPROVADO ou testes persistentes | SPEC + código do SPRINT + testes + `STATE.md` + `ARCHITECTURE.md` seções 1 e 5 |
+| `/quick-fix [descrição]` | — | Correção ≤ 3 arquivos sem novo domínio | Contexto mínimo dos arquivos afetados |
+| `/pause-session` | — | Encerrar sessão com estado salvo | `STATE.md` + `HANDOFF_TEMPLATE.md` |
+| `/resume-session` | — | Retomar após pausa ou crash | `HANDOFF.md` + `STATE.md` + `KNOWLEDGE.md` (se existir) |
+| `/map-codebase [path?]` | — | Adotar kit em projeto com código existente | Arquivos do diretório informado |
 
 **Observações importantes:**
 - `[spec]` é o caminho relativo para o arquivo SPEC, ex: `specs/action-plan/create-action-plan.md`
 - `[n]` é o número do [SPRINT](#sprint), de 1 a 5
+- `/forensics-sprint` é exclusivo para diagnóstico pós-falha — não substitui o fluxo normal (impl → test → review)
 - Se o comando não existir como slash command configurado, copie o prompt correspondente do `AGENTS.md` e use diretamente no chat do Claude Code, incluindo o contexto mínimo
 
 ---
@@ -1984,7 +2051,7 @@ Um slash command é um arquivo `.md` em `.claude/commands/` que:
 
 ### Usando os arquivos prontos da pasta "Slash Commands"
 
-Este kit já vem com todos os 5 comandos prontos para uso na pasta `Slash Commands/`. Para utilizá-los no seu projeto:
+Este kit já vem com todos os 10 comandos prontos para uso na pasta `Slash Commands/`. Para utilizá-los no seu projeto:
 
 **Passo 1:** Certifique-se de que a pasta `.claude/commands/` existe no seu projeto. Se não existir, crie-a:
 ```bash
@@ -1993,18 +2060,23 @@ mkdir -p .claude/commands
 
 **Passo 2:** Copie os arquivos de comando do kit para o seu projeto (ajuste o caminho conforme onde você salvou o kit):
 ```bash
-cp /caminho/para/o/kit/Slash\ Commands/new-spec.md     .claude/commands/
-cp /caminho/para/o/kit/Slash\ Commands/impl-sprint.md  .claude/commands/
-cp /caminho/para/o/kit/Slash\ Commands/review-arch.md  .claude/commands/
-cp /caminho/para/o/kit/Slash\ Commands/test-sprint.md  .claude/commands/
-cp /caminho/para/o/kit/Slash\ Commands/migrate-sprint.md .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/new-spec.md         .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/impl-sprint.md      .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/review-arch.md      .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/test-sprint.md      .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/migrate-sprint.md   .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/quick-fix.md        .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/pause-session.md    .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/resume-session.md   .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/map-codebase.md     .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/forensics-sprint.md .claude/commands/
 ```
 
 **Passo 3:** Verifique que os arquivos foram copiados:
 ```bash
 ls .claude/commands/
 ```
-Você deve ver: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`
+Você deve ver 10 arquivos: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`, `quick-fix.md`, `pause-session.md`, `resume-session.md`, `map-codebase.md`, `forensics-sprint.md`
 
 **Passo 4:** Para o CLAUDE.md inicial do seu projeto, use o template em `Slash Commands/CLAUDE.md` como base — copie, renomeie e preencha com os dados do seu projeto:
 ```bash
@@ -2014,7 +2086,7 @@ Depois abra `CLAUDE.md` no VS Code e preencha `[Nome do Projeto]`, as tecnologia
 
 ---
 
-### Criando os 6 Comandos do Kit
+### Criando os 10 Comandos do Kit
 
 Se preferir criar os arquivos manualmente em vez de copiar da pasta `Slash Commands/`, use o conteúdo abaixo.
 
@@ -2140,7 +2212,12 @@ acaoplus/
     │   ├── impl-sprint.md
     │   ├── review-arch.md
     │   ├── test-sprint.md
-    │   └── migrate-sprint.md
+    │   ├── migrate-sprint.md
+    │   ├── quick-fix.md
+    │   ├── pause-session.md
+    │   ├── resume-session.md
+    │   ├── map-codebase.md
+    │   └── forensics-sprint.md
     └── settings.json
 ```
 
@@ -2239,6 +2316,9 @@ Use esta tabela para encontrar rapidamente qualquer exemplo do AçãoPlus:
 | Job duplica execução (cobrança dupla, e-mail duplicado) | Job não implementa idempotência | Adicione verificação de estado antes de agir (ex: `invoice.isPaidInPeriod()`). Consulte SAAS_PATTERNS.md seção 10 |
 | Evento entre [bounded contexts](#bounded-context-contexto-delimitado) se perdeu (processo crashou) | Evento disparado diretamente sem Outbox | Implemente Outbox Pattern (ARCHITECTURE.md seção 19) — evento persiste na mesma transação do aggregate |
 | Use Case abre transação em dois repositórios separados | Falta [Unit of Work](#unit-of-work) | Extraia `IUnitOfWork`, injete via DI e envolva as duas operações em `begin/commit` (ARCHITECTURE.md seção 7) |
+| SPRINT reprovado repetidamente pelo Review | Desvio de escopo ou violação arquitetural não óbvia | Execute `/forensics-sprint [spec] [n]` para diagnóstico estruturado: o agente identifica FRs com problema, GWT sem cobertura, violações por arquivo e causa raiz |
+| Sessão encerrada sem `/pause-session` (crash) | HANDOFF.md inexistente ou desatualizado | Use o Crash Recovery Protocol do `AGENTS.md`: leia STATE.md → `git status` → `git diff HEAD` → mapeie cada arquivo modificado ao SPRINT/FR antes de retomar |
+| A mesma IA repete o mesmo erro sessão após sessão | Aprendizado não foi registrado | Registre o padrão em `KNOWLEDGE.md` (seção 3 — Patterns to Avoid). Na próxima sessão, o `/resume-session` carregará o registro antes de qualquer ação |
 
 ---
 
@@ -2259,7 +2339,7 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 - [ ] **Estrutura de pastas criada:** Execute os comandos do [Passo 1](#passo-1-criar-a-estrutura-de-pastas): `mkdir -p src/{presentation,application,domain,infrastructure}`, `mkdir -p tests/{unit,integration,e2e}`, `mkdir -p specs`, `mkdir -p .claude/commands`
 - [ ] **Arquivos do kit copiados:** Execute os comandos do [Passo 2](#passo-2-copiar-os-arquivos-do-kit): arquivos de arquitetura + templates operacionais copiados para a raiz do projeto; `STATE.md` e `PROJECT.md` criados a partir dos templates
 - [ ] **CLAUDE.md criado:** Crie o arquivo conforme o [Passo 3](#passo-3-criar-o-claudemd): nome do projeto, `@ARCHITECTURE.md`, `@STATE.md`, tecnologias e bounded contexts preenchidos
-- [ ] **Slash commands configurados:** Execute os comandos do [Passo 5](#passo-5-criar-os-slash-commands-veja-seção-7): 9 arquivos `.md` copiados para `.claude/commands/`. Teste digitando `/` no Claude Code — os comandos devem aparecer
+- [ ] **Slash commands configurados:** Execute os comandos do [Passo 5](#passo-5-criar-os-slash-commands-veja-seção-7): 10 arquivos `.md` copiados para `.claude/commands/`. Teste digitando `/` no Claude Code — os comandos devem aparecer
 
 **Verificação (ambas as opções):**
 - [ ] **PROJECT.md preenchido:** Vision Statement e Non-Goals definidos antes do primeiro SPEC
@@ -2303,6 +2383,7 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 - [ ] **Tabela de rastreabilidade GWT verificada:** Agente Testing listou todos os cenários como "coberto" — se algum ficou sem cobertura, solicite o teste faltante antes de avançar
 - [ ] **Review executado e aprovado:** Execute [`/review-arch [spec] [n]`](#fase-7-revisar-sprint-1-com-o-agente-review) — veredicto deve ser **APROVADO** ou **APROVADO COM RESSALVAS** (nunca avance com REPROVADO)
 - [ ] **Ressalvas registradas (se houver):** Ressalvas do Review anotadas na seção correspondente do SPEC para acompanhamento
+- [ ] **(Se REPROVADO repetidamente)** Execute [`/forensics-sprint [spec] [n]`](#6-comandos-claude-code--referência-completa) para diagnóstico estruturado antes de tentar nova implementação
 
 ---
 
@@ -2336,12 +2417,14 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 
 | Arquivo | Papel | Quem usa | Quando |
 |---|---|---|---|
-| `ARCHITECTURE.md` | Constitution do projeto | Todos os agentes | Toda sessão de vibe coding |
-| `AGENTS.md` | Prompts e fluxo dos 6 agentes | Você (para copiar prompts) | Ao acionar cada agente |
+| `ARCHITECTURE.md` | Constituição do projeto | Todos os agentes | Toda sessão de vibe coding |
+| `AGENTS.md` | Prompts, Phase Guards, Token Profiles e Multi-Model Routing | Você (para copiar prompts) | Ao acionar cada agente |
 | `SPEC_TEMPLATE.md` | Formato padrão de SPEC | Agente Spec | Ao criar cada SPEC |
 | `TESTING_GUIDE.md` | Estratégia de testes | Agente Testing | Ao gerar testes de cada [SPRINT](#sprint) |
 | `SAAS_PATTERNS.md` | Padrões [multi-tenant](#multi-tenant), billing, GDPR, background jobs | Agente Spec + Impl | Features SaaS-específicas e background jobs |
 | `GLOSSARY_TEMPLATE.md` | Template de vocabulário de domínio | Você (para criar GLOSSARY) | Antes do 1º SPEC de cada contexto |
+| `GIT_WORKFLOW.md` | Convenção de branches por SPEC (`spec/<slug>`) | Você (referência) | Leia uma vez no início do projeto |
+| `KNOWLEDGE_TEMPLATE.md` | Template para `KNOWLEDGE.md` — lições entre sessões | `/pause-session` + `/resume-session` | Registre ao pausar; leia ao retomar |
 
 ---
 
