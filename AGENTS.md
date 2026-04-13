@@ -95,6 +95,33 @@ Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
 
 **Meta:** manter o total de contexto de entrada abaixo de 40k tokens. Reserve o restante para raciocínio e geração.
 
+### Perfis de Execução por Contexto
+
+Declare o perfil no início da sessão com uma linha: `Perfil de execução: Quality`.
+O agente ajustará a completude das verificações conforme o perfil.
+
+| Perfil | Quando usar | Regra de contexto | Target de tokens |
+|---|---|---|---|
+| **Budget** | Exploração, prototipação, spikes, projetos não-produção | Passe apenas o contexto mandatório da tabela acima. Omita contextos opcionais. | < 15k tokens |
+| **Balanced** | Desenvolvimento ativo em projeto em andamento | Inclua contexto opcional quando diretamente relevante ao SPRINT atual. | < 30k tokens |
+| **Quality** | SPECs críticos (billing, auth, segurança, LGPD) | Inclua todo contexto relevante: STATE.md, KNOWLEDGE.md, arquivos brownfield. | < 40k tokens |
+
+### Roteamento por Modelo (Recomendação)
+
+Use este guia para otimizar custo sem sacrificar qualidade onde importa.
+
+| Agente | Modelo Recomendado | Justificativa |
+|---|---|---|
+| **Spec** | Leve ou intermediário | Output estruturado seguindo template fixo — raciocínio linear |
+| **Analyze** | Leve ou intermediário | Validação de checklist contra regras conhecidas |
+| **Implementation (Sprint 1–2)** | Melhor disponível | Modelagem de domínio + TDD requerem raciocínio profundo e consistência multi-arquivo |
+| **Implementation (Sprint 3–4)** | Melhor disponível | Integração infra + contrato de API precisam de atenção a detalhes |
+| **Testing** | Leve ou intermediário | Geração de testes por padrão a partir de GWT existentes |
+| **Review** | Melhor disponível | Detecção de violações sutis de arquitetura exige máxima atenção |
+| **Migration** | Leve ou intermediário | Geração de SQL a partir de entidades explícitas — tarefa determinística |
+
+> **Nota:** O custo de um erro nos agentes Implementation e Review supera o custo do modelo. Use sempre o melhor modelo disponível nesses dois agentes — independentemente do perfil de execução escolhido.
+
 ### Divisão em sub-SPRINTs
 
 Quando um SPRINT tem **mais de 5 FRs** ou vai criar **mais de 6 arquivos novos**:
@@ -130,6 +157,45 @@ Se qualquer sinal abaixo aparecer, use `/pause-session` imediatamente:
 | Agente Implementation gera código fora do escopo do SPRINT | Remova o código extra, re-execute apenas o SPRINT correto |
 | Decisão arquitetural não-óbvia foi tomada | Registre em `STATE.md` (Seção 1) antes de fechar a sessão |
 | Contexto esgotando / resposta genérica | Use `/pause-session`, reinicie nova sessão com contexto mínimo |
+
+---
+
+## Recuperação de Crash de Sessão
+
+Use este protocolo quando a sessão terminar abruptamente (queda de conexão, fechamento do terminal, crash do browser) **sem** que `/pause-session` tenha sido executado.
+
+### Sinais de que a sessão terminou abruptamente
+
+- `HANDOFF.md` não existe na raiz (pausa intencional sempre cria o arquivo)
+- `HANDOFF.md` existe mas tem data/hora anterior ao último commit no git
+- `git status` mostra arquivos modificados que não constam no `HANDOFF.md`
+- O último commit do git é de um SPRINT diferente do que estava sendo trabalhado
+
+### Protocolo de diagnóstico (execute nesta ordem)
+
+1. Leia `STATE.md` — identifique o último SPRINT referenciado no log de sessões (Seção 4)
+2. Execute `git status` — veja quais arquivos foram modificados desde o último commit
+3. Execute `git diff HEAD` — veja o conteúdo das mudanças não commitadas
+4. Para cada arquivo modificado: determine a qual SPRINT e FR pertence, consultando o SPEC
+5. Para cada FR do SPRINT identificado: determine o estado atual — RED (teste falhando), GREEN (teste passando), REFACTOR, ou incompleto
+6. Se o estado for ambíguo ou irrecuperável (arquivos parcialmente escritos sem intenção clara): marque como irrecuperável
+
+### Protocolo de retomada
+
+**Se o estado for recuperável:**
+Crie o `HANDOFF.md` manualmente com:
+- Caminho do SPEC em trabalho (identificado pelo `git diff`)
+- Número do SPRINT atual
+- Estado de cada FR: COMPLETO / EM_PROGRESSO / NAO_INICIADO (baseado no diagnóstico)
+- Última ação realizada (baseada no `git diff`)
+- Próximo passo concreto
+
+Em seguida, use `/resume-session` normalmente.
+
+**Se o estado for irrecuperável:**
+1. Adicione uma entrada no STATE.md (Seção 4) descrevendo o crash e o que foi perdido
+2. Execute `git checkout -- .` para descartar as mudanças não commitadas
+3. Reinicie o SPRINT com `/impl-sprint [spec] [n]`
 
 ---
 
@@ -226,6 +292,11 @@ Anti-patterns a evitar:
 Salve o SPEC em: specs/[dominio]/[verbo]-[substantivo].md
 ```
 
+### Limites de Escopo — Agente Spec
+
+**PODE:** criar User Stories, NFRs, FRs, cenários GWT, estruturar SPRINTs, identificar ambiguidades na seção Clarify.
+**NÃO PODE:** escrever código de produção ou de teste. Não pode decidir qual biblioteca usar. Não pode sugerir estrutura de pastas além da seção 2 do ARCHITECTURE.md. Não pode aprovar o próprio SPEC — aprovação é exclusivamente humana.
+
 ---
 
 ## Agente 2 — Analyze
@@ -293,6 +364,11 @@ Formato do relatório:
 [se PRONTO: "Execute /impl-sprint [spec] 1 para iniciar o SPRINT 1"]
 [se REQUER CORREÇÃO: "Corrija os itens listados no SPEC e execute /review-arch [spec] analyze novamente"]
 ```
+
+### Limites de Escopo — Agente Analyze
+
+**PODE:** validar consistência interna do SPEC, detectar FRs sem GWT, detectar violações arquiteturais na especificação.
+**NÃO PODE:** modificar o SPEC (apenas reportar o que precisa ser corrigido). Não pode iniciar implementação. Não pode sugerir FRs adicionais não solicitados pelo desenvolvedor. Não pode emitir `PRONTO PARA IMPLEMENTAR` se houver itens não resolvidos na seção Clarify.
 
 ---
 
@@ -379,6 +455,11 @@ Informe explicitamente ao desenvolvedor:
 **Regra especial de segurança:** Para bibliotecas de **pagamento, autenticação ou criptografia**, apenas as opções (a) ou (b) são permitidas. Nunca gere código com comentário `// VERIFY` nessas áreas — o risco de bug silencioso é inaceitável.
 ```
 
+### Limites de Escopo — Agente Implementation
+
+**PODE:** criar arquivos nos SPRINTs explicitamente listados no SPEC, escrever testes TDD para os FRs do SPRINT em execução.
+**NÃO PODE:** criar arquivos fora da estrutura da seção 2 do ARCHITECTURE.md. Não pode implementar FRs de outros SPRINTs. Não pode criar entidades, interfaces ou value objects que já existam no codebase (pesquise com Glob/Grep antes). Não pode tomar decisões arquiteturais não previstas no SPEC sem pausar e informar o desenvolvedor. Não pode commitar código.
+
 ---
 
 ## Agente 4 — Testing
@@ -433,6 +514,11 @@ Anti-patterns a evitar:
 - Não compartilhe estado mutável entre testes.
 - Não use banco de dados real em testes unitários.
 ```
+
+### Limites de Escopo — Agente Testing
+
+**PODE:** criar arquivos de teste em `tests/`, criar InMemoryRepositories em `tests/helpers/`, complementar testes faltantes para cobrir todos os cenários GWT.
+**NÃO PODE:** modificar código de produção. Não pode criar testes para FRs de outros SPRINTs. Não pode alterar a interface de repositório para facilitar o teste — adapte o teste ao contrato existente, nunca o contrário.
 
 ---
 
@@ -521,9 +607,20 @@ Formato do relatório:
 ### Commit Sugerido
 [Inclua esta seção somente quando o veredicto for APROVADO ou APROVADO COM RESSALVAS]
 Mensagem pronta para copiar e usar no terminal:
-`type(bounded-context): descrição imperativa em português [slug-do-spec]`
+```
+type(bounded-context): descrição imperativa em português
+
+Spec: specs/[dominio]/[verbo]-[substantivo].md
+Sprint: [N]
+Reviewed-By: Agente Review
+```
 Escolha o type conforme ARCHITECTURE.md seção 20 (feat para SPRINT novo, test se foi apenas testes, refactor se foi ciclo de melhoria).
 ```
+
+### Limites de Escopo — Agente Review
+
+**PODE:** emitir veredicto, listar violações por severidade, sugerir mensagem de commit, descrever correções necessárias.
+**NÃO PODE:** aplicar as correções diretamente no código. Não pode alterar o SPEC. Não pode emitir `APROVADO` quando há violação crítica da seção 1.1 — mesmo com "ressalvas" ou "excepcionalmente". Não pode sugerir implementação de funcionalidades não presentes no SPRINT atual.
 
 ---
 
@@ -576,6 +673,11 @@ Anti-patterns a evitar:
 - Não use tipos de dados específicos de vendor sem necessidade (prefira UUID, TEXT, TIMESTAMP).
 ```
 
+### Limites de Escopo — Agente Migration
+
+**PODE:** gerar novos arquivos `.sql` em `src/infrastructure/database/migrations/`.
+**NÃO PODE:** modificar migrations já existentes — apenas criar novas. Não pode inferir o schema a partir do SPEC — deve basear-se nas entidades reais do código gerado. Não pode gerar seed de dados de produção.
+
 ---
 
 ## Referência Rápida
@@ -601,3 +703,6 @@ Anti-patterns a evitar:
 | Mapear codebase existente (brownfield) | — | `/map-codebase` |
 | Dúvida sobre padrão de commits | — | Consulte ARCHITECTURE.md seção 20 |
 | Decisão arquitetural tomada nesta sessão | — | Registre em `STATE.md` antes de fechar |
+| SPRINT reprovado ou com falhas não óbvias | Agente Forense | `/forensics-sprint [spec] [n]` |
+| Dúvida sobre estratégia de branches git | — | Consulte `GIT_WORKFLOW.md` |
+| Sessão terminou abruptamente (sem /pause-session) | — | Consulte "Recuperação de Crash de Sessão" em AGENTS.md |

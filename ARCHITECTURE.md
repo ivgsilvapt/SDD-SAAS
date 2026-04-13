@@ -1038,6 +1038,26 @@ test(action-plan): adiciona cobertura GWT para FR-004 e FR-005
 chore(infra): cria migration 20251001_120000_add_tenant_id_to_invoices
 ```
 
+### Trailers de Rastreabilidade (opcionais, recomendados)
+
+Adicione trailers estruturados após uma linha em branco no corpo do commit para rastreabilidade SPEC↔código:
+
+```
+feat(billing): implementa cancelamento de assinatura por inadimplência
+
+Spec: specs/billing/create-subscription.md
+Sprint: 2
+Reviewed-By: Agente Review
+```
+
+**Regras dos trailers:**
+- `Spec:` — caminho relativo ao arquivo SPEC. **Obrigatório** quando o type for `feat`, `test` ou `refactor` vinculado a um SPEC.
+- `Sprint:` — número do SPRINT (ex: `1`, `2`, `1a`, `1b`). **Obrigatório** quando `Spec:` estiver presente.
+- `Reviewed-By:` — sempre `Agente Review` para revisão automatizada, ou nome do desenvolvedor para revisão manual.
+- `Approved-By:` — opcional, para registrar quem aprovou o SPEC antes da implementação.
+
+Os trailers são retrocompatíveis — o formato inline `[spec-ref]` existente continua válido para commits simples.
+
 ### Tabela de tipos
 
 | Tipo | Quando usar |
@@ -1068,8 +1088,8 @@ SPRINT implementado + testes gerados
    Agente Review → APROVADO
            │
            ▼
-   "Commit Sugerido:" feat(scope): descrição [spec-ref]
+   "Commit Sugerido:" (formato com trailers)
            │
            ▼
-   git commit -m "feat(scope): descrição [spec-ref]"
+   git commit -m "feat(scope): descrição" -m "Spec: specs/... Sprint: N Reviewed-By: Agente Review"
 ```

@@ -4,10 +4,11 @@ Você é o Agente de Retomada de Sessão. Sua responsabilidade é reconstruir o 
 
 ## PASSO 1 — Ler o estado salvo
 
-1. Leia o arquivo `HANDOFF.md` na raiz do projeto.
+1. Se o arquivo `KNOWLEDGE.md` existir na raiz do projeto, leia-o **antes de qualquer outra ação** — ele contém lições acumuladas de sessões anteriores que devem guiar esta retomada.
+2. Leia o arquivo `HANDOFF.md` na raiz do projeto.
    - Se não existir, informe: "Nenhum HANDOFF.md encontrado. Use `/new-spec` para iniciar uma nova feature ou `/impl-sprint` para um SPRINT específico."
-2. Leia o `STATE.md` para carregar o contexto acumulado do projeto (decisões, bloqueios, ideias adiadas).
-3. Leia o ARCHITECTURE.md (seções 0–5) para recarregar as restrições arquiteturais.
+3. Leia o `STATE.md` para carregar o contexto acumulado do projeto (decisões, bloqueios, ideias adiadas).
+4. Leia o ARCHITECTURE.md (seções 0–5) para recarregar as restrições arquiteturais.
 
 ---
 

@@ -51,4 +51,14 @@ Verifique:
 
 Veredicto: "APROVADO", "APROVADO COM RESSALVAS" ou "REPROVADO" com lista detalhada.
 
+Quando o veredicto for APROVADO ou APROVADO COM RESSALVAS, inclua a seção **Commit Sugerido** com o formato de trailers:
+
+```
+type(bounded-context): descrição imperativa em português
+
+Spec: [caminho do SPEC]
+Sprint: [N]
+Reviewed-By: Agente Review
+```
+
 Siga rigorosamente as regras do agente correspondente definidas em AGENTS.md.

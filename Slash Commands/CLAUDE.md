@@ -16,6 +16,8 @@ Leia ARCHITECTURE.md antes de qualquer ação. Este projeto segue Clean Architec
 @STATE.md — Memória persistente: decisões, bloqueios, ideias adiadas (obrigatório em toda sessão)
 @specs/[dominio-principal]/GLOSSARY.md — Vocabulário do domínio (substitua [dominio-principal] pelo seu bounded context)
 @PROJECT.md — Visão e propósito do produto (opcional, recomendado para o Agente Spec)
+@KNOWLEDGE.md — Lições acumuladas de sessões anteriores (opcional — se existir, leia antes de implementar)
+@GIT_WORKFLOW.md — Estratégia de branches por SPEC (leia uma vez no início do projeto, não é necessário em toda sessão)
 
 Quando acionar um agente via slash command, consulte AGENTS.md para o contexto mínimo
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
@@ -31,6 +33,7 @@ daquele agente e inclua apenas os arquivos necessários — não inclua o kit in
 - /pause-session — salva o estado atual e cria HANDOFF.md para retomada posterior
 - /resume-session — retoma sessão a partir do HANDOFF.md
 - /map-codebase [path?] — analisa codebase existente e gera documentação em .specs/codebase/
+- /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
 
 ## Tecnologias deste projeto
 - Linguagem: [TypeScript / Python / Java / etc.]

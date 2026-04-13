@@ -82,12 +82,26 @@ Se uma decisão arquitetural não-óbvia foi tomada durante a sessão, registre 
 
 ---
 
-## PASSO 6 — Confirmar a pausa
+## PASSO 6 — Atualizar o KNOWLEDGE.md (se existir)
+
+Se o arquivo `KNOWLEDGE.md` existir na raiz do projeto, verifique se esta sessão revelou algo digno de registro:
+
+- Descoberta inesperada sobre uma biblioteca, SDK externo ou comportamento do ORM → **Seção 1 (Discoveries)** ou **Seção 4 (External API Gotchas)**
+- Padrão de implementação que funcionou excepcionalmente bem → **Seção 2 (Patterns That Worked)**
+- Anti-padrão tentado que causou problema → **Seção 3 (Patterns to Avoid)**
+
+Se nada for digno de registro, não altere o arquivo.
+**Regra:** KNOWLEDGE.md é append-only — nunca delete entradas existentes.
+
+---
+
+## PASSO 7 — Confirmar a pausa
 
 Exiba ao desenvolvedor:
 
 > "✅ Sessão pausada com sucesso.
 > HANDOFF.md criado com o estado atual do SPRINT [N] de [spec].
 > STATE.md atualizado com o log desta sessão.
+> [Se KNOWLEDGE.md foi atualizado: "KNOWLEDGE.md atualizado com [n] nova(s) entrada(s)."]
 >
 > Para retomar: use `/resume-session` na próxima sessão."

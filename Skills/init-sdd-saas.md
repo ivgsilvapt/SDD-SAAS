@@ -98,6 +98,8 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 - `ROADMAP_TEMPLATE.md`
 - `HANDOFF_TEMPLATE.md`
 - `CODEBASE_MAPPING_GUIDE.md`
+- `GIT_WORKFLOW.md`
+- `KNOWLEDGE_TEMPLATE.md` → copiar como `KNOWLEDGE.md` (inicia vazio com apenas os cabeçalhos e as linhas de exemplo — o conteúdo real será preenchido durante o uso)
 
 **Slash commands (pasta `.claude/commands/`):**
 - `Slash Commands/new-spec.md`         → `.claude/commands/new-spec.md`
@@ -109,6 +111,7 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 - `Slash Commands/pause-session.md`    → `.claude/commands/pause-session.md`
 - `Slash Commands/resume-session.md`   → `.claude/commands/resume-session.md`
 - `Slash Commands/map-codebase.md`     → `.claude/commands/map-codebase.md`
+- `Slash Commands/forensics-sprint.md` → `.claude/commands/forensics-sprint.md`
 
 Use Read para ler cada arquivo do kit e Write para criá-lo no destino.
 
@@ -152,6 +155,8 @@ Leia ARCHITECTURE.md antes de qualquer ação. Este projeto segue Clean Architec
 @STATE.md — Memória persistente: decisões, bloqueios, ideias adiadas (obrigatório em toda sessão)
 @specs/[BOUNDED_CONTEXT_PRINCIPAL]/GLOSSARY.md — Vocabulário do domínio
 @PROJECT.md — Visão e propósito do produto (opcional, recomendado para o Agente Spec)
+@KNOWLEDGE.md — Lições acumuladas de sessões anteriores (opcional — se existir, leia antes de implementar)
+@GIT_WORKFLOW.md — Estratégia de branches por SPEC (leia uma vez no início do projeto, não é necessário em toda sessão)
 
 Quando acionar um agente via slash command, consulte AGENTS.md para o contexto mínimo
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
@@ -167,6 +172,7 @@ daquele agente e inclua apenas os arquivos necessários — não inclua o kit in
 - /pause-session — salva o estado atual e cria HANDOFF.md para retomada posterior
 - /resume-session — retoma sessão a partir do HANDOFF.md
 - /map-codebase [path?] — analisa codebase existente e gera documentação em .specs/codebase/
+- /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
 
 ## Tecnologias deste projeto
 - Linguagem: [LINGUAGEM]
@@ -207,7 +213,7 @@ Apresente ao desenvolvedor o resumo final:
 Estrutura criada:
 meu-projeto/
 ├── .claude/
-│   └── commands/          ← 9 slash commands prontos
+│   └── commands/          ← 10 slash commands prontos
 │       ├── new-spec.md
 │       ├── impl-sprint.md
 │       ├── review-arch.md
@@ -216,7 +222,8 @@ meu-projeto/
 │       ├── quick-fix.md
 │       ├── pause-session.md
 │       ├── resume-session.md
-│       └── map-codebase.md
+│       ├── map-codebase.md
+│       └── forensics-sprint.md
 ├── src/
 │   ├── presentation/
 │   ├── application/
@@ -234,6 +241,8 @@ meu-projeto/
 ├── TESTING_GUIDE.md       SAAS_PATTERNS.md  GLOSSARY_TEMPLATE.md
 ├── STATE_TEMPLATE.md      PROJECT_TEMPLATE.md ROADMAP_TEMPLATE.md
 ├── HANDOFF_TEMPLATE.md    CODEBASE_MAPPING_GUIDE.md
+├── GIT_WORKFLOW.md        ← estratégia de branches por SPEC
+├── KNOWLEDGE.md           ← registro append-only de lições aprendidas
 ├── STATE.md               ← memória persistente (pronta para uso)
 ├── PROJECT.md             ← visão do produto (preencha antes do primeiro SPEC)
 └── CLAUDE.md              ← contexto automático do Claude Code ✓
@@ -241,7 +250,8 @@ meu-projeto/
 Próximos passos (nesta ordem):
 1. Abra PROJECT.md e preencha Vision Statement e Non-Goals do seu SaaS
 2. Abra specs/[bounded-context-principal]/GLOSSARY.md e defina os termos do domínio
-3. Use /new-spec [descrição] para criar sua primeira feature
+3. Leia GIT_WORKFLOW.md para entender o padrão de branches por SPEC (leitura única)
+4. Use /new-spec [descrição] para criar sua primeira feature
 
 Dica: Se estiver adotando o kit em um projeto que já tem código, execute primeiro:
   /map-codebase src/
