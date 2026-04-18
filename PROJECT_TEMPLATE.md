@@ -15,6 +15,70 @@
 
 ---
 
+## Personas
+
+> Personas concretas ajudam o Agente Spec a criar User Stories relevantes e o Agente Discovery a validar hipóteses.
+> Defina ao menos 2 personas: quem paga (decisor) e quem usa (usuário final).
+> Se o `DISCOVERY.md` existir, as personas devem ser derivadas de lá.
+
+### Persona 1 — [Nome fictício, papel]
+
+| Campo | Descrição |
+|---|---|
+| **Perfil** | [ex: Maria, Gerente de Operações, 38 anos, empresa industrial de 80 funcionários] |
+| **Objetivo principal** | [ex: Ter visibilidade em tempo real do andamento dos planos de ação da equipe sem precisar perguntar a cada um] |
+| **Maior frustração atual** | [ex: Planilhas Excel desatualizadas e sem histórico — nunca sabe se o que está vendo é a versão mais recente] |
+| **Como mede sucesso** | [ex: 100% dos planos com prazo têm responsável e status atualizado] |
+| **Frequência de uso** | [ex: Diária — acompanha painel no começo e fim do dia] |
+| **Nível técnico** | [ex: Médio — usa ferramentas de gestão mas não é programadora] |
+
+**Jobs to Be Done:**
+- Quando [situação], quero [motivação], para [resultado esperado].
+- [ex: Quando começo a semana, quero ver rapidamente quais ações estão atrasadas, para priorizar onde preciso intervir]
+
+**Pains / Gains:**
+
+| Pains (o que frustra) | Gains (o que ela quer ganhar) |
+|---|---|
+| [ex: Passar horas consolidando planilhas antes de reuniões] | [ex: Painel pronto para apresentar sem preparação manual] |
+| [ex: Não saber quem é responsável por cada ação] | [ex: Rastreabilidade clara de responsável e prazo] |
+
+---
+
+### Persona 2 — [Nome fictício, papel]
+
+| Campo | Descrição |
+|---|---|
+| **Perfil** | [ex: Carlos, Analista de Qualidade, 28 anos, recebe tarefas via plano de ação] |
+| **Objetivo principal** | [ex: Saber exatamente o que precisa fazer hoje e conseguir marcar como feito sem fricção] |
+| **Maior frustração atual** | [ex: Recebe tarefas por WhatsApp, e-mail e planilha — não tem uma fonte única de verdade] |
+| **Como mede sucesso** | [ex: Zero tarefa esquecida ou vencida sem que ele saiba] |
+| **Frequência de uso** | [ex: Quando recebe notificação ou no início do dia] |
+| **Nível técnico** | [ex: Básico — usa smartphone e ferramentas simples] |
+
+**Jobs to Be Done:**
+- [ex: Quando sou notificado de uma nova tarefa, quero entender imediatamente o que precisa ser feito e até quando, para não atrasar minha equipe]
+
+---
+
+## North Star Metric e Guardrails
+
+> A North Star Metric é **o único número** que melhor captura o valor entregue ao usuário.
+> Se subir, o produto está funcionando. Se cair, algo está errado.
+> Guardrails são limites que não podem ser sacrificados para aumentar a North Star.
+
+**North Star Metric:**
+> [ex: Número de planos de ação com 100% das tarefas concluídas no prazo, por tenant, por mês]
+> *Por que este número?* [ex: Representa o valor real entregue — o tenant atingiu o objetivo para o qual contratou o produto]
+
+**Guardrails:**
+| Guardrail | Limite | Por que não pode ser sacrificado |
+|---|---|---|
+| [ex: Taxa de erro de endpoints críticos] | [ex: < 0.5%] | [ex: Erros frequentes destroem confiança do tenant] |
+| [ex: Tempo de resposta p95 do dashboard] | [ex: < 500ms] | [ex: Dashboard lento torna o produto inutilizável no início do dia] |
+
+---
+
 ## Público-Alvo
 
 **Quem paga (decisor de compra):**

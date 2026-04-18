@@ -411,6 +411,212 @@ class RenewSubscriptionsJob {
 
 ---
 
+## 11. Tenant Provisioning Queue
+
+O fluxo de onboarding de tenant envolve múltiplas operações (criação de conta, registro no gateway de pagamento, envio de e-mail de boas-vindas, setup de dados iniciais). Se todas forem síncronas no request de signup, o usuário espera vários segundos e qualquer falha de serviço externo quebra o cadastro.
+
+### O Problema
+
+```
+POST /signup
+  └─ CreateTenantUseCase
+       ├─ INSERT tenant (< 50ms)
+       ├─ RegisterOnStripe (200–800ms, pode falhar)
+       ├─ SendWelcomeEmail (100–500ms, pode falhar)
+       └─ SetupDefaultData (100–300ms)
+  Total: 400ms–1.6s, qualquer falha = 500 para o usuário
+```
+
+### A Solução: Provisioning Assíncrono
+
+```
+POST /signup
+  └─ CreateTenantUseCase
+       ├─ INSERT tenant (status: provisioning) + TenantProvisioningRequested no Outbox
+       └─ Retorna 201 imediatamente (< 100ms)
+
+Worker (async)
+  └─ Consome TenantProvisioningRequested
+       ├─ RegisterOnStripe (com retry)
+       ├─ SendWelcomeEmail (com retry)
+       ├─ SetupDefaultData
+       └─ UPDATE tenant (status: active) + TenantProvisioned no Outbox
+```
+
+### Estados do Provisioning
+
+| Status | Significado | Acesso do tenant |
+|---|---|---|
+| `provisioning` | Conta criada, setup em andamento | Limitado (só tela de "configurando sua conta...") |
+| `active` | Provisioning concluído | Total |
+| `provisioning_failed` | Provisioning falhou após N tentativas | Suporte humano necessário |
+
+### Regras de Implementação
+
+- **Idempotência obrigatória:** o worker pode reprocessar o evento — cada passo verifica se já foi feito antes de executar
+- **Retry com backoff:** 1s, 5s, 30s, 5min, 1h — desiste após 6 tentativas e seta `provisioning_failed`
+- **Timeout por etapa:** cada operação externa tem timeout individual (não deixe Stripe segurar o worker indefinidamente)
+- **Feedback em tempo real:** o frontend faz polling de `/tenants/me/status` até o status ser `active`
+- **Never block signup:** se o provisioning falhar, o tenant deve conseguir entrar em contato com o suporte — não apenas ver uma tela de erro
+
+### Interface do Worker
+
+```typescript
+// application/jobs/provision-tenant.job.ts
+class ProvisionTenantJob {
+  async execute(event: TenantProvisioningRequested): Promise<void> {
+    const steps: ProvisioningStep[] = [
+      new RegisterOnGatewayStep(this.paymentGateway),
+      new SendWelcomeEmailStep(this.mailer),
+      new SetupDefaultDataStep(this.defaultDataService),
+    ]
+
+    for (const step of steps) {
+      if (await step.isAlreadyDone(event.tenantId)) continue
+      await step.execute(event.tenantId)
+    }
+
+    await this.tenantRepo.updateStatus(event.tenantId, TenantStatus.ACTIVE)
+  }
+}
+```
+
+---
+
+## 12. Data Residency
+
+Clientes enterprise podem exigir que seus dados sejam armazenados em uma região geográfica específica (BR, EU, US). Isso impacta onde o banco e os serviços de storage são provisionados.
+
+### Quando implementar
+
+Implemente Data Residency quando:
+- O contrato com o cliente especificar região de armazenamento
+- A regulamentação aplicável exigir (ex: dados de saúde no Brasil devem permanecer no Brasil)
+- O modelo de negócio incluir clientes enterprise com exigências de compliance
+
+Para early-stage SaaS com clientes SMB: adie. Adicione apenas a **coluna de região** no tenant para facilitar a migração futura.
+
+### Estratégia Simples: Região por Tenant
+
+```sql
+ALTER TABLE tenants ADD COLUMN data_region VARCHAR(10) NOT NULL DEFAULT 'br-east';
+-- Valores possíveis: 'br-east', 'us-east', 'eu-west'
+```
+
+O `TenantContext` passa a incluir a região, e a camada de infraestrutura roteia para o banco correto:
+
+```typescript
+interface ITenantContext {
+  tenantId: TenantId
+  tenantSlug: string
+  plan: SubscriptionPlan
+  dataRegion: DataRegion  // novo campo
+}
+```
+
+### Arquitetura de Roteamento por Região
+
+```
+Request chega → Middleware de Auth → TenantContext criado com dataRegion
+                                          │
+                                          ▼
+                                  DatabaseRouter
+                                  ├── 'br-east' → pool de conexão BR
+                                  ├── 'us-east' → pool de conexão US
+                                  └── 'eu-west' → pool de conexão EU
+```
+
+### Restrições de Design
+
+- **Nenhum dado cross-region:** repositórios nunca fazem query em banco diferente do `dataRegion` do TenantContext
+- **Backups na mesma região:** snapshots do banco ficam na mesma região que os dados
+- **Metadados centralizados:** informações de roteamento (qual tenant está em qual região) podem ficar em um banco central global — apenas os dados de negócio são regionalizados
+- **Logs e traces:** verificar se o serviço de observabilidade também permite residência regional
+
+### Checklist de Data Residency
+
+- [ ] Coluna `data_region` na tabela `tenants`
+- [ ] `DatabaseRouter` na infraestrutura roteia por `TenantContext.dataRegion`
+- [ ] Testes de isolamento verificam que tenant BR não acessa pool EU
+- [ ] Backups configurados na mesma região dos dados
+- [ ] Contrato e política de privacidade especificam as regiões disponíveis
+
+---
+
+## 13. Tenant Migration / Export / Import
+
+Mover um tenant entre ambientes (staging → produção, região BR → região EU) ou exportar dados para portabilidade LGPD/GDPR exige um padrão consistente.
+
+### Casos de Uso
+
+| Operação | Quando | Risco |
+|---|---|---|
+| **Export** | Pedido LGPD/GDPR de portabilidade; cliente pedindo backup | Baixo — apenas leitura |
+| **Import** | Migrar de ambiente staging para produção | Médio — cria dados |
+| **Migration** | Mover tenant entre regiões (Data Residency) | Alto — envolve dois bancos |
+
+### Padrão: Export
+
+```typescript
+// application/use-cases/export-tenant-data.use-case.ts
+class ExportTenantDataUseCase {
+  async execute(tenantId: TenantId): Promise<TenantExport> {
+    // Coleta dados de todos os bounded contexts do tenant
+    // Inclui todos os campos marcados com @pii
+    // Gera JSON estruturado por bounded context
+    // Registra AuditLog com action: 'export'
+    return {
+      exportedAt: new Date(),
+      tenantId: tenantId.value,
+      data: {
+        auth: await this.authRepo.exportForTenant(tenantId),
+        billing: await this.billingRepo.exportForTenant(tenantId),
+        // ... demais bounded contexts
+      }
+    }
+  }
+}
+```
+
+**Regras do Export:**
+- Sempre registra `AuditLog` com `action: 'export'`
+- Inclui todos os campos PII sem anonimização (é para o próprio tenant)
+- Retorna JSON estruturado — nunca SQL dump direto
+- Export assíncrono para tenants com muitos dados: usa job + notificação por e-mail quando pronto
+
+### Padrão: Tenant Migration entre Regiões
+
+```
+1. Cria snapshot dos dados do tenant na região de origem (Export)
+2. Seta tenant.status = 'migrating' (bloqueia escrita durante migração)
+3. Importa snapshot na região de destino
+4. Verifica integridade: contagem de registros por entidade
+5. Atualiza tenant.data_region = nova_região
+6. Seta tenant.status = 'active'
+7. Remove dados da região de origem (com AuditLog)
+```
+
+**Cuidados:**
+- A janela de migração (status `migrating`) deve ser de minutos, não horas — planeje o tempo de cada etapa
+- Comunicar o tenant com antecedência sobre a janela de indisponibilidade
+- Manter rollback: se a etapa 4 falhar, o tenant continua na região original
+- Nunca deletar dados da origem antes de confirmar integridade no destino
+
+### Interface de Repositório para Export
+
+Cada repositório de domínio deve implementar o método de export:
+
+```typescript
+interface ISubscriptionRepository {
+  // ... métodos existentes ...
+  exportForTenant(tenantId: TenantId): Promise<SubscriptionExportData[]>
+}
+```
+
+O método `exportForTenant` retorna todos os dados do tenant sem paginação — é para export completo, não para listagem de UI.
+
+---
+
 ## 9. Eventos de Domínio SaaS — Referência
 
 Além dos eventos de Subscription (seção 3), eventos comuns em SaaS:

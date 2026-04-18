@@ -417,3 +417,133 @@ Migrations de alteração: verificar o comportamento dos dados existentes após 
   - Cenários GWT cobertos (rastreabilidade SPEC → teste)
   - Caminhos de erro testados
   - Invariantes de domínio validadas
+
+---
+
+## 10. Property-Based Testing *(opcional — recomendado para domínio crítico)*
+
+Property-based testing complementa os testes baseados em exemplos (GWT) ao gerar **centenas de inputs aleatórios** e verificar que uma propriedade invariante sempre vale — não apenas para os casos que o desenvolvedor imaginou.
+
+### Quando usar
+
+Use property-based testing para:
+- **Value Objects** com regras de validação: `Email`, `CPF`, `Money`, `Percentage`
+- **Cálculos financeiros**: totais de fatura, cálculo de desconto, rateio, arredondamento
+- **Transformações com reversibilidade**: serialização/deserialização, codificação/decodificação
+- **Operações comutativas ou associativas**: soma de Money, merge de permissões
+
+**Não use** para:
+- Controllers e repositórios (property testing não se aplica a I/O)
+- Lógica de estado com muitas dependências (difícil de compor)
+- Cenários que já têm exemplos suficientes e nenhum input inesperado é possível
+
+### Ferramentas recomendadas
+
+| Linguagem | Biblioteca |
+|---|---|
+| TypeScript / JavaScript | `fast-check` |
+| Python | `hypothesis` |
+| Java / Kotlin | `jqwik` |
+| Go | `gopter` |
+
+### Exemplo — TypeScript com fast-check
+
+```typescript
+import * as fc from 'fast-check'
+import { Money } from '@/domain/billing/value-objects/money'
+
+// Propriedade: somar Money e depois subtrair o mesmo valor retorna o original
+test('Money_Add_ThenSubtract_ShouldReturnOriginal', () => {
+  fc.assert(
+    fc.property(
+      fc.integer({ min: 1, max: 1_000_000 }), // centavos
+      fc.integer({ min: 1, max: 1_000_000 }),  // centavos a somar
+      (original, addition) => {
+        const m1 = Money.ofCents(original)
+        const m2 = Money.ofCents(addition)
+        const result = m1.add(m2).subtract(m2)
+        return result.equals(m1)
+      }
+    )
+  )
+})
+
+// Propriedade: Money negativo sempre falha na criação
+test('Money_WithNegativeAmount_ShouldAlwaysFailValidation', () => {
+  fc.assert(
+    fc.property(
+      fc.integer({ max: -1 }),
+      (negativeAmount) => {
+        const result = Money.ofCents(negativeAmount)
+        return result.isErr()
+      }
+    )
+  )
+})
+```
+
+### Localização dos testes
+
+```
+tests/unit/domain/
+├── value-objects/
+│   ├── email.test.ts           ← testes GWT + property
+│   ├── money.property.test.ts  ← property-based dedicado
+│   └── cpf.property.test.ts
+```
+
+---
+
+## 11. Mutation Testing *(opcional — para domínio de alto risco)*
+
+Mutation testing mede a **qualidade dos testes** — não a quantidade de linhas cobertas.
+A ferramenta altera o código de produção (introduz "mutantes") e verifica se algum teste falha.
+Se nenhum teste falha com o mutante, significa que seus testes não detectariam aquele bug.
+
+### Quando usar
+
+Use mutation testing em código de **alto risco de bug silencioso**:
+- Regras de negócio de billing (cálculo de cobrança, desconto, proration)
+- Lógica de autorização (RBAC, verificação de plano, isolamento de tenant)
+- Algoritmos de cálculo em Value Objects financeiros
+- Máquinas de estado de entidades críticas (Subscription, Invoice)
+
+**Não aplique rotineiramente** a todo o codebase — o custo computacional é alto.
+Reserve para as partes onde um bug silencioso teria consequência financeira ou de segurança.
+
+### Ferramentas recomendadas
+
+| Linguagem | Ferramenta |
+|---|---|
+| TypeScript / JavaScript | `Stryker Mutator` |
+| Python | `mutmut` ou `cosmic-ray` |
+| Java | `PIT (Pitest)` |
+
+### Exemplo de configuração — Stryker (TypeScript)
+
+```json
+// stryker.config.json
+{
+  "mutate": [
+    "src/domain/billing/**/*.ts",
+    "src/domain/auth/**/*.ts"
+  ],
+  "testRunner": "jest",
+  "coverageAnalysis": "perTest",
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 50
+  }
+}
+```
+
+### Interpretando os resultados
+
+| Resultado | Significado | Ação |
+|---|---|---|
+| Mutante **morto** | Algum teste detectou a alteração | Bom — este caminho está protegido |
+| Mutante **sobrevivente** | Nenhum teste detectou | Adicione um teste que pegue este caso |
+| Mutante **timeout** | Teste entrou em loop infinito | Investigue o mutante — possível loop infinito no código real |
+
+**Meta:** ≥ 75% de mutantes mortos no domínio de billing e auth. Abaixo disso, a cobertura de linha está dando falsa sensação de segurança.

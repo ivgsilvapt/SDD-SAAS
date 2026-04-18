@@ -867,6 +867,57 @@ Quando um SPRINT tem mais de 5 FRs ou vai criar mais de 6 arquivos novos:
 > 4. **Isolamento de Bounded Context > DRY** — entre BCs, duplicar implementação é preferível a acoplar contextos
 > 5. **KISS** — se duas soluções atendem ao requisito, a mais simples vence
 
+### Resoluções de Conflito Explícitas
+
+**Conflito 1 — TDD vs. YAGNI em Infra/Presentation**
+
+TDD é **obrigatório** em Domain e Application — ciclo instantâneo, zero dependências externas.
+
+Em Infrastructure e Presentation, o fluxo padrão é **Implementação → Agente Testing** (TDD opcional), porque o setup de banco real ou HTTP client dificulta o ciclo Red → Green e o ganho é marginal para mapeamentos ORM e controllers de passagem.
+
+**Exceção que retorna ao TDD obrigatório:** código de Infra/Presentation com lógica ramificada — mapeamento condicional complexo, autorização condicional, parsing com múltiplas regras. Se houver `if/else` de regra, aplique TDD.
+
+> **Regra de ouro:** se o código que você está escrevendo pode introduzir um bug de lógica silencioso, escreva o teste antes. Se é mapeamento determinístico, escreva depois.
+
+---
+
+**Conflito 2 — Fail Fast vs. Resilience**
+
+Estes dois princípios atuam em domínios diferentes e **nunca colidem quando aplicados corretamente:**
+
+- **Fail Fast** aplica-se a **erros de input e negócio (classe 4xx):** CPF inválido, campo ausente, token expirado, recurso não encontrado, regra de negócio violada. Retorne erro imediatamente — nunca tente novamente, a condição de falha é o próprio request.
+- **Resilience** aplica-se a **erros de infraestrutura e rede (classe 5xx):** timeout de banco, falha transitória de gateway de pagamento, instabilidade de serviço externo. Use Timeout + Retry com backoff exponencial + Circuit Breaker.
+
+> **Regra de ouro:** Nunca aplique retry em erro 4xx — você vai reenviar o mesmo input inválido indefinidamente. Sempre aplique retry em timeouts e 5xx de serviços externos — a falha é transitória, não estrutural.
+
+---
+
+**Conflito 3 — KISS vs. Clean Architecture (Trivial Query Path)**
+
+Features simples de leitura pura, sem regra de negócio e sem cruzamento de Bounded Contexts, podem usar o **Trivial Query Path** para evitar cerimônia desnecessária:
+
+- O Agente Spec pode marcar um SPEC como `trivial-query: true` no Contexto Arquitetural.
+- SPECs `trivial-query` **pulam o SPRINT 1 (Domínio)** — não há entidade de domínio a modelar.
+- O SPRINT 2 usa um **read model direto** (interface tipada, sem entidade de domínio): `controller → query handler → read model`. A interface ainda existe no Application — apenas a entidade de domínio é omitida.
+
+**Critérios cumulativos para `trivial-query`** — todos devem ser verdadeiros:
+1. É leitura pura — não modifica estado
+2. Zero regra de negócio (sem invariante, sem cálculo, sem validação de negócio)
+3. Dados de um único Bounded Context
+4. Sem cruzamento de entidades de domínio
+
+> **Se houver dúvida sobre qualquer critério, use a arquitetura completa.** O Trivial Query Path é uma exceção justificada, não um atalho padrão.
+
+---
+
+**Conflito 4 — Consistência de Modelos em Multi-Model Routing**
+
+Um agente validador nunca pode ter menos capacidade de raciocínio que o agente que gerou o artefato que está validando. A regra específica é:
+
+> **Analyze e Review devem usar um modelo igual ou superior ao usado pelo Implementation.**
+
+Ver tabela de roteamento por modelo em `AGENTS.md` (seção "Roteamento por Modelo") para os critérios de escolha por agente.
+
 | Princípio | Regra |
 |---|---|
 | **SRP** | Uma razão para mudar por classe |
@@ -1093,3 +1144,142 @@ SPRINT implementado + testes gerados
            ▼
    git commit -m "feat(scope): descrição" -m "Spec: specs/... Sprint: N Reviewed-By: Agente Review"
 ```
+
+---
+
+## 21. Privacy by Design
+
+Privacy by Design é um **princípio arquitetural de primeiro nível** neste SaaS, não uma verificação de conformidade tardia. Toda feature que toca dados pessoais (PII) deve incorporar proteção desde o SPEC.
+
+### Definição de PII neste projeto
+
+PII (Personally Identifiable Information) inclui, mas não se limita a:
+- Nome completo, e-mail, telefone, CPF/CNPJ, endereço
+- IP de acesso, device ID, dados de comportamento do usuário
+- Qualquer dado que, isolado ou combinado, identifique uma pessoa física
+
+### Tags de PII obrigatórias em DTOs
+
+Todo DTO, Command Object ou ViewModel que contenha campo PII deve ser anotado:
+
+```typescript
+// Exemplo em TypeScript — adapte para a linguagem do projeto
+class CreateUserCommand {
+  /** @pii */
+  email: Email
+
+  /** @pii */
+  fullName: string
+
+  role: UserRole  // não é PII
+}
+```
+
+A tag `@pii` serve como contrato para:
+- Auditoria automática: nunca logar campos com `@pii` em texto plano
+- Exportação LGPD: o `ExportTenantDataUseCase` deve incluir todos os campos `@pii`
+- Revisão de segurança: o Agente Security Audit verifica que campos `@pii` não aparecem em logs
+
+### Log obrigatório de acesso a PII
+
+Toda operação que lê, altera ou exclui dados PII de um usuário deve registrar um evento de auditoria:
+
+```
+AuditLog {
+  tenantId: TenantId
+  actorId: UserId          // quem realizou a ação
+  targetUserId: UserId     // cujos dados foram acessados
+  action: 'read' | 'update' | 'delete' | 'export'
+  fields: string[]         // quais campos PII foram afetados
+  timestamp: Date
+  source: 'api' | 'job' | 'admin'
+}
+```
+
+### Checklist Privacy by Design (por SPEC)
+
+Adicione ao Contexto Arquitetural do SPEC quando `PII envolvido` ≠ "nenhum":
+
+- [ ] Campos PII marcados com `@pii` no Command Object e ViewModel
+- [ ] Log de auditoria implementado para toda operação de leitura/escrita em PII
+- [ ] Soft delete implementado (nunca DELETE físico em entidades com PII)
+- [ ] Consentimento registrado com timestamp e versão da política (se aplicável)
+- [ ] `ExportTenantDataUseCase` atualizado para incluir novos campos PII
+- [ ] TTL de retenção definido no SPEC para dados temporários
+
+### Legislações aplicáveis
+
+| Legislação | Escopo | Padrões mínimos neste kit |
+|---|---|---|
+| **LGPD** (Lei 13.709/2018) | Brasil — qualquer dado de pessoa física | Soft delete, exportação, consentimento, log de acesso |
+| **GDPR** | União Europeia — se o SaaS atende usuários da UE | Idem LGPD + direito à portabilidade + DPA com processadores |
+
+> Detalhes de implementação de soft delete, exportação e anonimização: ver `SAAS_PATTERNS.md` seção 7.
+
+---
+
+## 22. Architecture Decision Records (ADRs)
+
+ADRs registram **por que** uma decisão arquitetural foi tomada — não apenas o que foi decidido. Complementam o `STATE.md` (que registra estado atual) documentando o raciocínio que não vai aparecer no código.
+
+### Quando criar um ADR
+
+Crie um ADR quando:
+- Uma decisão afeta mais de um Bounded Context
+- Uma alternativa razoável foi considerada e rejeitada
+- A decisão vai contra a intuição (e futuras IAs ou devs vão questionar)
+- Uma restrição externa (legal, negócio, time) forçou uma escolha sub-ótima tecnicamente
+
+Não crie ADR para decisões triviais ou que seguem o padrão deste kit sem desvios.
+
+### Localização e nomenclatura
+
+```
+docs/adr/
+├── 0001-row-level-tenancy-over-schema-per-tenant.md
+├── 0002-prisma-over-typeorm.md
+└── 0003-jwt-stateless-over-session-store.md
+```
+
+### Formato obrigatório
+
+```markdown
+# ADR-XXXX — [Título em linguagem natural]
+
+**Data:** YYYY-MM-DD
+**Status:** proposed | accepted | deprecated | superseded by ADR-XXXX
+**Bounded Contexts afetados:** [lista]
+
+## Contexto
+
+[O que motivou esta decisão? Qual problema precisava de solução?
+Quais restrições (técnicas, de negócio, regulatórias) estavam presentes?]
+
+## Decisão
+
+[O que foi decidido? Seja específico — descreva a solução escolhida.]
+
+## Alternativas consideradas
+
+| Alternativa | Por que foi rejeitada |
+|---|---|
+| [Opção A] | [Razão] |
+| [Opção B] | [Razão] |
+
+## Consequências
+
+**Positivas:**
+- [...]
+
+**Negativas / trade-offs:**
+- [...]
+
+**Ações necessárias:**
+- [ ] [O que precisa ser feito como resultado desta decisão]
+```
+
+### Ciclo de vida
+
+- ADRs aceitos **nunca são editados** — são superseded por um novo ADR se a decisão mudar
+- O `STATE.md` pode referenciar um ADR com `ver docs/adr/XXXX` para decisões estruturais
+- O Agente Spec deve consultar ADRs existentes antes de propor padrões alternativos

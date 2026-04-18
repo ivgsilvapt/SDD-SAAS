@@ -8,9 +8,14 @@ Use os prompts abaixo diretamente como contexto ao acionar cada agente.
 ## Fluxo entre Agentes
 
 ```
-Descrição da feature (linguagem natural)
+Ideia (linguagem natural)
            │
            ▼
+   ┌────────────────────┐
+   │  AGENTE DISCOVERY  │  → DISCOVERY.md: problema validado, personas, hipóteses, North Star
+   └────────┬───────────┘
+            │ hipóteses marcadas como validadas
+            ▼
    ┌───────────────┐
    │  AGENTE SPEC  │  → Specify: User Stories, NFRs, FRs, Clarify, G-W-T, Checklist de Cobertura
    └───────┬───────┘
@@ -37,6 +42,24 @@ Descrição da feature (linguagem natural)
              │ sem violações críticas → APROVADO
              ▼
         próximo SPRINT
+             │ todos os SPRINTs aprovados
+             ▼
+   ┌────────────────────┐      ┌──────────────────┐      ┌────────────────┐
+   │  AGENTE DEVOPS     │      │  AGENTE SECURITY  │      │  AGENTE API    │
+   │  /init-devops      │      │  /security-audit  │      │  DOCS          │
+   │  /update-pipeline  │      │                   │      │  /generate-    │
+   └────────────────────┘      └──────────────────┘      │  api-docs      │
+                                                          └────────────────┘
+             │ feature em produção
+             ▼
+   ┌────────────────────┐
+   │  AGENTE SRE        │  → /define-slo, /generate-runbook
+   └────────────────────┘
+             │ ao final de milestone
+             ▼
+   ┌─────────────────────────┐
+   │  AGENTE RETROSPECTIVA   │  → análise de velocity + lições → KNOWLEDGE.md
+   └─────────────────────────┘
 ```
 
 **Regras do fluxo:**
@@ -51,12 +74,18 @@ Descrição da feature (linguagem natural)
 
 | Etapa spec-kit | Agente | Skill |
 |---|---|---|
+| Validação de ideia/problema antes do SPEC | Agente Discovery | `/discover [ideia]` |
 | `speckit.specify` + `speckit.clarify` + `speckit.checklist` | Agente Spec | `/new-spec` |
 | `speckit.analyze` | Agente Analyze | `/review-arch [spec] analyze` |
 | `speckit.implement` (por SPRINT) | Agente Implementation | `/impl-sprint [spec] [n]` |
 | Geração de testes (por SPRINT) | Agente Testing | `/test-sprint [spec] [n]` |
 | Validação pós-SPRINT | Agente Review | `/review-arch [spec] [n]` |
 | Migration de banco (se necessário) | Agente Migration | `/migrate-sprint [spec] [n]` |
+| Setup de CI/CD e infraestrutura | Agente DevOps | `/init-devops [cloud]` |
+| Auditoria de segurança | Agente Security Audit | `/security-audit [spec\|full]` |
+| Definição de SLOs e runbooks | Agente SRE | `/define-slo [spec]` |
+| Geração de documentação de API | Agente API Docs | `/generate-api-docs` |
+| Revisão pós-milestone | Agente Retrospectiva | `/retrospect` |
 
 ---
 
@@ -66,7 +95,8 @@ Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
 
 | Agente | Contexto obrigatório | Contexto opcional |
 |---|---|---|
-| **Spec** | `ARCHITECTURE.md` (seções 0–3) + `SPEC_TEMPLATE.md` + `GLOSSARY_TEMPLATE.md` do projeto | `SAAS_PATTERNS.md` se for feature multi-tenant; `PROJECT.md` + `ROADMAP.md` para User Stories alinhadas com produto |
+| **Discovery** | `PROJECT.md` do projeto (se existir) | `ROADMAP.md` para alinhar com backlog existente |
+| **Spec** | `ARCHITECTURE.md` (seções 0–3) + `SPEC_TEMPLATE.md` + `GLOSSARY_TEMPLATE.md` do projeto | `SAAS_PATTERNS.md` se for feature multi-tenant; `PROJECT.md` + `ROADMAP.md` para User Stories alinhadas com produto; `DISCOVERY.md` se existir |
 | **Analyze** | SPEC completo + `ARCHITECTURE.md` (seções 1 e 5) | — |
 | **Implementation Sprint 1** | `ARCHITECTURE.md` (seções 0–5) + SPRINT 1 do SPEC | `SAAS_PATTERNS.md` se modelar domínio SaaS; `.specs/codebase/STACK.md` + `CONVENTIONS.md` em projetos brownfield |
 | **Implementation Sprint 2+** | `ARCHITECTURE.md` (seções 0–5) + SPRINT N do SPEC + interfaces de repositório já criadas | `.specs/codebase/STACK.md` + `CONVENTIONS.md` + `ARCHITECTURE.md` (codebase) em brownfield |
@@ -75,6 +105,11 @@ Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
 | **Review** | Código do SPRINT + testes do SPRINT + SPRINT N do SPEC (GWT) + `ARCHITECTURE.md` (seções 1 e 5) | `.specs/codebase/CONCERNS.md` em brownfield (para distinguir legado de nova violação) |
 | **Migration** | Entidades do SPRINT 1 + DDL atual do banco + `ARCHITECTURE.md` (seções 13 e 19) | `.specs/codebase/STACK.md` para versão exata do ORM/banco |
 | **Implementation (jobs)** | `ARCHITECTURE.md` (seções 0–5 e 19) + SPRINT N do SPEC | `SAAS_PATTERNS.md` se o job iterar sobre tenants |
+| **DevOps** | `.specs/codebase/STACK.md` (se existir) + cloud alvo | SPECs dos serviços que o pipeline deve testar/deployar |
+| **Security Audit** | SPEC auditado (ou lista de arquivos para auditoria full) + `ARCHITECTURE.md` seção 11 | `.specs/codebase/STACK.md` para versões de dependências |
+| **SRE** | SPEC da feature + `SAAS_PATTERNS.md` | Configuração de infraestrutura (Prometheus, Grafana, CloudWatch) |
+| **API Docs** | Controllers + Command Objects + ViewModels relevantes | SPECs das rotas documentadas |
+| **Retrospectiva** | `STATE.md` + `KNOWLEDGE.md` + lista de commits do milestone | `ROADMAP.md` para alinhar lições com próximas features |
 | **Qualquer agente (retomada)** | Se `HANDOFF.md` existir na raiz, leia-o antes de agir — representa o estado exato da sessão anterior | — |
 
 ---
@@ -110,16 +145,23 @@ O agente ajustará a completude das verificações conforme o perfil.
 
 Use este guia para otimizar custo sem sacrificar qualidade onde importa.
 
-| Agente | Modelo Recomendado | Justificativa |
-|---|---|---|
-| **Spec** | Leve ou intermediário | Output estruturado seguindo template fixo — raciocínio linear |
-| **Analyze** | Leve ou intermediário | Validação de checklist contra regras conhecidas |
-| **Implementation (Sprint 1–2)** | Melhor disponível | Modelagem de domínio + TDD requerem raciocínio profundo e consistência multi-arquivo |
-| **Implementation (Sprint 3–4)** | Melhor disponível | Integração infra + contrato de API precisam de atenção a detalhes |
-| **Testing** | Leve ou intermediário | Geração de testes por padrão a partir de GWT existentes |
-| **Review** | Melhor disponível | Detecção de violações sutis de arquitetura exige máxima atenção |
-| **Migration** | Leve ou intermediário | Geração de SQL a partir de entidades explícitas — tarefa determinística |
+| Agente | Modelo Recomendado | Modelo Mínimo | Justificativa |
+|---|---|---|---|
+| **Spec** | Leve ou intermediário | Qualquer | Output estruturado seguindo template fixo — raciocínio linear |
+| **Analyze** | **≥ Implementation** | **≥ Implementation** | Validador não pode ter menos raciocínio que o gerador do artefato |
+| **Implementation (Sprint 1–2)** | Melhor disponível | Intermediário | Modelagem de domínio + TDD requerem raciocínio profundo e consistência multi-arquivo |
+| **Implementation (Sprint 3–4)** | Melhor disponível | Intermediário | Integração infra + contrato de API precisam de atenção a detalhes |
+| **Testing** | Leve ou intermediário | Leve | Geração de testes por padrão a partir de GWT existentes |
+| **Review** | **≥ Implementation** | **≥ Implementation** | Detecção de violações sutis exige máxima atenção — nunca inferior ao modelo que gerou o código |
+| **Migration** | Leve ou intermediário | Leve | Geração de SQL a partir de entidades explícitas — tarefa determinística |
+| **Discovery** | Leve ou intermediário | Qualquer | Entrevista guiada por template — raciocínio estruturado |
+| **DevOps** | Leve ou intermediário | Qualquer | Geração de configuração a partir de template |
+| **Security Audit** | Melhor disponível | Intermediário | Threat modeling e detecção de vulnerabilidades exigem raciocínio adversarial |
+| **SRE** | Leve ou intermediário | Qualquer | Derivação de SLOs e runbooks a partir de padrões conhecidos |
+| **API Docs** | Leve ou intermediário | Leve | Leitura de código + geração de schema — tarefa determinística |
 
+> **Regra crítica (Conflito 4 — ver ARCHITECTURE.md seção 17):** Analyze e Review **nunca** usam modelo inferior ao usado em Implementation na mesma sessão. Um Review mais fraco que o Implementation é um falso positivo estrutural — aprova código que o gerador teria rejeitado.
+>
 > **Nota:** O custo de um erro nos agentes Implementation e Review supera o custo do modelo. Use sempre o melhor modelo disponível nesses dois agentes — independentemente do perfil de execução escolhido.
 
 ### Divisão em sub-SPRINTs
@@ -680,16 +722,383 @@ Anti-patterns a evitar:
 
 ---
 
+## Agente 7 — Discovery
+
+### Papel
+Valida a ideia de produto antes da criação do primeiro SPEC. Guia o desenvolvedor por uma entrevista estruturada de problema, gerando um `DISCOVERY.md` com personas, hipóteses e North Star. Um SPEC só deve ser criado para hipóteses marcadas como validadas.
+
+### Quando acionar
+Antes de qualquer SPEC para uma funcionalidade ou produto novo. Opcional para features incrementais dentro de um produto já validado.
+
+### Entrada obrigatória
+- Descrição da ideia em linguagem natural
+- `PROJECT.md` do projeto (se já existir)
+
+### Saída esperada
+- Arquivo `DISCOVERY.md` na raiz do projeto (use `DISCOVERY_TEMPLATE.md` como base)
+- Veredicto: `PROBLEMA VALIDADO` | `REQUER MAIS PESQUISA` | `CONSIDERAR PIVOTAR`
+
+### Prompt
+
+```
+Você é o Agente Discovery. Sua responsabilidade é validar o problema antes de qualquer código ou SPEC.
+
+Tarefa: guie a validação da seguinte ideia:
+$ARGUMENTS
+
+Processo obrigatório:
+1. Faça perguntas de descoberta do problema usando a técnica dos 5 Porquês até chegar à causa raiz.
+2. Identifique 2–3 personas (quem tem o problema, quem paga, quem decide).
+3. Preencha todos os 9 blocos do Lean Canvas.
+4. Defina a North Star Metric e 2 guardrails.
+5. Liste 3–5 hipóteses de negócio que precisam ser validadas antes do primeiro SPRINT.
+6. Para cada hipótese, sugira o experimento de menor custo para validá-la (não necessariamente código).
+7. Emita o veredicto.
+
+Se alguma hipótese central não tiver evidência, o veredicto deve ser REQUER MAIS PESQUISA — não PROBLEMA VALIDADO.
+
+Salve o resultado em DISCOVERY.md usando o DISCOVERY_TEMPLATE.md como estrutura.
+```
+
+### Limites de Escopo — Agente Discovery
+
+**PODE:** fazer perguntas de descoberta, preencher DISCOVERY.md, emitir veredicto, sugerir experimentos de validação.
+**NÃO PODE:** criar SPECs. Não pode marcar hipóteses como validadas sem evidência declarada pelo desenvolvedor. Não pode iniciar implementação.
+
+---
+
+## Agente 8 — DevOps
+
+### Papel
+Gera e mantém a infraestrutura de CI/CD, containerização e IaC do projeto. Cria o pipeline inicial com `/init-devops` e atualiza quando novos serviços ou workers são adicionados via SPEC.
+
+### Quando acionar
+- Uma vez no início do projeto (`/init-devops [cloud]`) para criar toda a estrutura base
+- Após SPRINTs que adicionam novos serviços, workers ou variáveis de ambiente (`/update-pipeline [spec]`)
+
+### Entrada obrigatória
+- Cloud alvo (aws | gcp | azure | fly | render | railway | vps)
+- `.specs/codebase/STACK.md` (se existir)
+
+### Saída esperada
+- `Dockerfile` multi-stage otimizado (non-root, `.dockerignore`)
+- `.github/workflows/ci.yml` (ou equivalente para o CI escolhido)
+- `.env.example` documentado com todas as variáveis necessárias
+- Manifest IaC (Terraform/Pulumi/Bicep) para a cloud alvo (opcional conforme complexidade)
+
+### Prompt
+
+```
+Você é o Agente DevOps. Sua responsabilidade é criar e manter infraestrutura de CI/CD.
+
+Tarefa: execute /init-devops para cloud: $ARGUMENTS
+
+Leia .specs/codebase/STACK.md (se existir) para identificar linguagem, framework, banco e workers.
+
+Entregáveis obrigatórios:
+1. Dockerfile multi-stage:
+   - Stage build: instala dependências + compila
+   - Stage production: apenas o necessário para executar (sem dev dependencies)
+   - Usuário non-root (nunca rode como root em produção)
+   - .dockerignore excluindo node_modules, .git, .env, testes
+2. .github/workflows/ci.yml com etapas:
+   - lint (se existir script no package.json / Makefile)
+   - test (unit + integration)
+   - build (compila e verifica que não quebra)
+   - deploy (apenas em merge para main — usando secrets de ambiente)
+3. .env.example com TODAS as variáveis de ambiente necessárias, com comentário explicando cada uma.
+   Nunca inclua valores reais — apenas placeholders como "your-secret-key-here".
+4. Instruções de setup de secrets no CI (onde configurar no GitHub/GitLab Actions).
+
+Anti-patterns a evitar:
+- Não hardcode secrets ou URLs de produção em nenhum arquivo
+- Não use latest como tag de imagem base — especifique a versão
+- Não execute o container como root
+- Não inclua arquivos de teste ou dev dependencies na imagem de produção
+```
+
+### Limites de Escopo — Agente DevOps
+
+**PODE:** criar/atualizar Dockerfile, CI/CD pipeline, .env.example, IaC básico.
+**NÃO PODE:** criar SPECs. Não pode commitar secrets. Não pode modificar código de aplicação.
+
+---
+
+## Agente 9 — Security Audit
+
+### Papel
+Executa threat modeling (STRIDE) e revisão OWASP Top 10 contra um SPEC específico ou contra o codebase completo. Identifica vulnerabilidades antes que cheguem à produção.
+
+### Quando acionar
+- Por SPEC, antes de iniciar implementation de features de segurança crítica (auth, billing, LGPD)
+- Full audit periódico (mensal ou a cada milestone)
+
+### Entrada obrigatória
+- `[spec]` para auditoria de SPEC específico, ou `full` para auditoria do codebase
+- `ARCHITECTURE.md` seção 11 (checklist de segurança)
+
+### Saída esperada
+- Relatório STRIDE para o SPEC auditado
+- Lista de violações OWASP Top 10 encontradas
+- Lista de dependências com CVEs conhecidos (se `full`)
+- Severidade por item: CRÍTICO | ALTO | MÉDIO | BAIXO
+
+### Prompt
+
+```
+Você é o Agente Security Audit. Sua responsabilidade é identificar vulnerabilidades antes que cheguem à produção.
+
+Tarefa: execute /security-audit $ARGUMENTS
+
+Se o argumento for um caminho de SPEC, audite apenas essa feature.
+Se o argumento for "full", audite o codebase acessível.
+
+Verificações obrigatórias:
+
+1. Threat Modeling — STRIDE para cada endpoint ou fluxo do SPEC:
+   - Spoofing: identidade pode ser falsificada? (JWT sem rotação, HMAC ausente)
+   - Tampering: dados podem ser alterados em trânsito? (sem validação de integridade)
+   - Repudiation: ações podem ser negadas? (log de auditoria ausente)
+   - Information Disclosure: dados podem vazar? (PII em logs, stack trace exposto)
+   - Denial of Service: endpoint pode ser abusado? (sem rate limiting, sem paginação)
+   - Elevation of Privilege: usuário pode escalar permissão? (falta de cheque de role)
+
+2. OWASP Top 10 (aplicável ao contexto):
+   - Injection (SQL, NoSQL, Command)
+   - Broken Authentication
+   - Sensitive Data Exposure
+   - Security Misconfiguration
+   - Using Components with Known Vulnerabilities
+
+3. Dependências (para auditoria full):
+   - Liste pacotes com CVEs conhecidos e severidade
+   - Indique se patch está disponível
+
+Formato do relatório:
+
+## Security Audit — [SPEC ou "Full Codebase"]
+
+### Ameaças STRIDE
+[por endpoint/fluxo: lista de ameaças identificadas com severidade]
+
+### Violações OWASP
+[lista ou "nenhuma encontrada"]
+
+### Dependências com CVE
+[lista com versão atual, CVE, severidade, versão de patch disponível — ou "nenhuma"]
+
+### Recomendações Prioritárias
+[top 3 ações de maior impacto, ordenadas por severidade]
+```
+
+### Limites de Escopo — Agente Security Audit
+
+**PODE:** identificar vulnerabilidades, sugerir correções, executar análise de dependências via `npm audit` / `pip-audit`.
+**NÃO PODE:** modificar código de produção diretamente. Não pode emitir "seguro" sem executar todas as verificações obrigatórias.
+
+---
+
+## Agente 10 — SRE (Site Reliability Engineering)
+
+### Papel
+Define SLIs, SLOs, alertas acionáveis e runbooks para features em produção. Ativado após a feature ser aprovada e antes (ou logo após) o deploy.
+
+### Quando acionar
+- Após aprovação de SPECs críticos (billing, auth, endpoints de alta frequência)
+- Ao preparar deploy de milestone
+
+### Entrada obrigatória
+- SPEC da feature com NFRs de performance e disponibilidade preenchidos
+- `SAAS_PATTERNS.md`
+
+### Saída esperada
+- Definição de SLIs e SLOs para a feature
+- Alertas acionáveis (condição + ação sugerida)
+- Runbook para os incidentes mais prováveis
+
+### Prompt
+
+```
+Você é o Agente SRE. Sua responsabilidade é definir confiabilidade operacional para features em produção.
+
+Tarefa: execute /define-slo para:
+$ARGUMENTS
+
+Para cada endpoint ou fluxo crítico do SPEC:
+
+1. Defina SLIs (Service Level Indicators):
+   - Latência: p50, p95, p99
+   - Taxa de erro: % de requisições com status 5xx
+   - Disponibilidade: % de tempo com p95 dentro do limite
+
+2. Proponha SLOs (Service Level Objectives):
+   - Baseie-se nos NFRs do SPEC (se disponíveis) ou use defaults conservadores:
+     - Latência p95 < 500ms para endpoints de leitura
+     - Latência p95 < 2s para endpoints de escrita com efeito colateral externo
+     - Taxa de erro < 0.5%
+     - Disponibilidade > 99.5%
+
+3. Crie alertas acionáveis (2 por SLO):
+   - Warning: 80% do orçamento de erros consumido → investigar
+   - Critical: SLO violado → escalar, verificar runbook
+
+4. Gere runbook para o incidente mais provável:
+   - Título
+   - Sintomas observáveis
+   - Passos de diagnóstico (em ordem)
+   - Ações de mitigação
+   - Critério de resolução
+
+Formato: markdown, copiável para docs/runbooks/[nome-do-incidente].md
+```
+
+### Limites de Escopo — Agente SRE
+
+**PODE:** definir SLOs, criar alertas, gerar runbooks.
+**NÃO PODE:** modificar código de produção. Não pode definir SLO mais restrito que o NFR do SPEC sem justificativa.
+
+---
+
+## Agente 11 — API Docs
+
+### Papel
+Gera documentação OpenAPI (swagger) a partir do código existente. Detecta breaking changes entre versões e mantém a documentação sincronizada com o código.
+
+### Quando acionar
+- Após conclusão de SPRINTs que criam ou modificam endpoints REST
+- Antes de publicar uma nova versão de API
+
+### Entrada obrigatória
+- Arquivos de Controller + Command Objects + ViewModels dos endpoints a documentar
+
+### Saída esperada
+- `openapi.yaml` válido (ou atualização do existente)
+- Lista de breaking changes detectados (se versão anterior existir)
+
+### Prompt
+
+```
+Você é o Agente API Docs. Sua responsabilidade é gerar e manter documentação OpenAPI sincronizada com o código.
+
+Tarefa: execute /generate-api-docs
+
+Leia os arquivos de Controller, Command Objects e ViewModels fornecidos.
+
+Processo obrigatório:
+1. Para cada endpoint encontrado:
+   - Método HTTP + path
+   - Parâmetros de path e query
+   - Body (schema derivado do Command Object com validações)
+   - Responses: 200/201 com schema do ViewModel, 400 com lista de erros de validação, 401, 403, 404, 422, 429 (se rate limiting existir)
+   - Exemplos de request e response (use dados fictícios mas realistas)
+
+2. Se existir openapi.yaml anterior, compare e liste breaking changes:
+   - Campo obrigatório removido
+   - Tipo de campo alterado
+   - Endpoint removido
+   - Status code removido
+
+3. Gere o openapi.yaml completo no formato OpenAPI 3.0.
+
+Anti-patterns a evitar:
+- Não documente campos internos que nunca aparecem na API
+- Não omita responses de erro — são parte do contrato
+- Não gere exemplos com dados pessoais reais (use fake data)
+```
+
+### Limites de Escopo — Agente API Docs
+
+**PODE:** gerar/atualizar `openapi.yaml`, listar breaking changes.
+**NÃO PODE:** modificar controllers ou viewmodels para facilitar documentação.
+
+---
+
+## Agente 12 — Retrospectiva
+
+### Papel
+Analisa um milestone concluído, extrai lições (velocity, SPECs reprovados, tempo por SPRINT, bugs pós-release) e alimenta automaticamente o `KNOWLEDGE.md` com aprendizados acionáveis.
+
+### Quando acionar
+Ao fechar um milestone — após todos os SPRINTs serem aprovados e a feature estar em produção.
+
+### Entrada obrigatória
+- `STATE.md` do projeto
+- `KNOWLEDGE.md` existente (se houver)
+- Lista de commits do milestone (`git log --oneline milestone-start..HEAD`)
+
+### Saída esperada
+- Análise de velocity (tempo estimado vs. realizado por SPRINT)
+- SPECs que foram reprovados e causa raiz
+- Padrões de bug pós-release
+- Entradas novas para `KNOWLEDGE.md`
+
+### Prompt
+
+```
+Você é o Agente Retrospectiva. Sua responsabilidade é extrair aprendizados de um milestone concluído.
+
+Tarefa: execute /retrospect para o milestone atual.
+
+Entradas:
+- STATE.md: $STATE_MD
+- Commits do milestone: $GIT_LOG
+- KNOWLEDGE.md existente: $KNOWLEDGE_MD
+
+Análise obrigatória:
+1. Velocity: para cada SPRINT do milestone, estime se foi mais rápido ou mais lento que o esperado.
+   Se mais lento, identifique a causa (ambiguidade no SPEC, decisão arquitetural não-óbvia, infra setup).
+
+2. SPECs Reprovados: liste SPECs que precisaram de mais de 1 ciclo Review → Fix. Para cada um, identifique:
+   - Qual regra foi violada
+   - Por que não foi detectada antes (Analyze, SPEC, ou só no Review)
+   - Como prevenir na próxima vez
+
+3. Padrões de Problema: identifique padrões recorrentes (mesma regra violada múltiplas vezes, mesma camada problemática).
+
+4. Novas entradas para KNOWLEDGE.md:
+   - Formato: "Lição [número]: [fato observado] → [ação preventiva para próxima vez]"
+   - Apenas lições que não estão já documentadas no KNOWLEDGE.md atual
+   - Máximo 5 lições por retrospectiva — priorize as de maior impacto
+
+Atualize o KNOWLEDGE.md com as novas entradas ao final.
+```
+
+### Limites de Escopo — Agente Retrospectiva
+
+**PODE:** ler STATE.md, KNOWLEDGE.md e git log; atualizar KNOWLEDGE.md com novas lições.
+**NÃO PODE:** modificar código de produção ou SPECs. Não pode marcar tarefas como concluídas no ROADMAP.
+
+---
+
 ## Referência Rápida
 
-| Situação | Agente | Skill |
+| Situação | Agente | Comando |
 |---|---|---|
+| **Pré-SPEC** | | |
+| Validar ideia/problema antes do primeiro SPEC | Agente Discovery | `/discover [ideia]` |
+| **Ciclo SPEC → Review** | | |
 | Nova funcionalidade solicitada | Agente Spec | `/new-spec [descrição]` |
 | SPEC aprovado, validar antes de implementar | Agente Analyze | `/review-arch [spec] analyze` |
 | SPEC aprovado + Analyze OK, iniciar SPRINT | Agente Implementation | `/impl-sprint [spec] [n]` |
 | SPRINT implementado, gerar testes | Agente Testing | `/test-sprint [spec] [n]` |
 | SPRINT + testes prontos, validar | Agente Review | `/review-arch [spec] [n]` |
 | SPRINT com impacto em banco | Agente Migration | `/migrate-sprint [spec] [n]` |
+| SPRINT reprovado ou com falhas não óbvias | Agente Forense | `/forensics-sprint [spec] [n]` |
+| **Pós-Review / Produção** | | |
+| Setup inicial de CI/CD e infraestrutura | Agente DevOps | `/init-devops [cloud]` |
+| Atualizar pipeline após novo serviço/worker | Agente DevOps | `/update-pipeline [spec]` |
+| Auditoria de segurança de um SPEC | Agente Security Audit | `/security-audit [spec]` |
+| Auditoria de segurança full do codebase | Agente Security Audit | `/security-audit full` |
+| Definir SLOs e alertas para uma feature | Agente SRE | `/define-slo [spec]` |
+| Gerar runbook para tipo de incidente | Agente SRE | `/generate-runbook [tipo]` |
+| Gerar/atualizar documentação de API | Agente API Docs | `/generate-api-docs` |
+| **Operação contínua** | | |
+| Correção pequena (≤3 arquivos, sem novo SPEC) | — | `/quick-fix [descrição]` |
+| Salvar estado da sessão atual | — | `/pause-session` |
+| Retomar sessão anterior | — | `/resume-session` |
+| Mapear codebase existente (brownfield) | — | `/map-codebase` |
+| Revisão ao fechar milestone | Agente Retrospectiva | `/retrospect` |
+| **Referências** | | |
 | Dúvida sobre estrutura de pastas | — | Consulte ARCHITECTURE.md seção 2 |
 | Dúvida sobre qual camada | — | Consulte ARCHITECTURE.md seção 6 |
 | Dúvida sobre multi-tenancy | — | Consulte SAAS_PATTERNS.md |
@@ -697,12 +1106,10 @@ Anti-patterns a evitar:
 | Dúvida sobre background jobs | — | Consulte ARCHITECTURE.md seção 19 + SAAS_PATTERNS.md seção 10 |
 | Dúvida sobre eventos entre BCs / Outbox | — | Consulte ARCHITECTURE.md seção 19 (Outbox Pattern) |
 | Dúvida sobre transações multi-repositório | — | Consulte ARCHITECTURE.md seção 7 (Unit of Work) |
-| Correção pequena (≤3 arquivos, sem novo SPEC) | — | `/quick-fix [descrição]` |
-| Salvar estado da sessão atual | — | `/pause-session` |
-| Retomar sessão anterior | — | `/resume-session` |
-| Mapear codebase existente (brownfield) | — | `/map-codebase` |
 | Dúvida sobre padrão de commits | — | Consulte ARCHITECTURE.md seção 20 |
 | Decisão arquitetural tomada nesta sessão | — | Registre em `STATE.md` antes de fechar |
-| SPRINT reprovado ou com falhas não óbvias | Agente Forense | `/forensics-sprint [spec] [n]` |
 | Dúvida sobre estratégia de branches git | — | Consulte `GIT_WORKFLOW.md` |
 | Sessão terminou abruptamente (sem /pause-session) | — | Consulte "Recuperação de Crash de Sessão" em AGENTS.md |
+| Conflito entre princípios arquiteturais | — | Consulte ARCHITECTURE.md seção 17 (Resoluções de Conflito) |
+| Decisão arquitetural relevante a registrar | — | Crie ADR em `docs/adr/` (ver ARCHITECTURE.md seção 22) |
+| Feature com dados pessoais (PII) | — | Consulte ARCHITECTURE.md seção 21 (Privacy by Design) |

@@ -23,17 +23,32 @@ Quando acionar um agente via slash command, consulte AGENTS.md para o contexto m
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
 
 ## Comandos disponíveis
+
+### Pré-SPEC
+- /discover [ideia] — valida problema/ideia via Agente Discovery, gera DISCOVERY.md
+
+### Ciclo SPEC → Review
 - /new-spec [descrição da feature] — cria novo SPEC via Agente Spec
-- /impl-sprint [spec] [n] — implementa SPRINT N via Agente Implementation
 - /review-arch [spec] analyze — valida consistência do SPEC via Agente Analyze
-- /review-arch [spec] [n] — revisa código do SPRINT N via Agente Review
+- /impl-sprint [spec] [n] — implementa SPRINT N via Agente Implementation
 - /test-sprint [spec] [n] — gera testes do SPRINT N via Agente Testing
+- /review-arch [spec] [n] — revisa código do SPRINT N via Agente Review
 - /migrate-sprint [spec] [n] — gera migration SQL do SPRINT N via Agente Migration
+- /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
+
+### Pós-Review / Produção
+- /init-devops [cloud] — configura CI/CD, Dockerfile e .env.example via Agente DevOps
+- /update-pipeline [spec] — atualiza pipeline após novos serviços/workers adicionados pelo SPEC
+- /security-audit [spec|full] — auditoria de segurança (STRIDE + OWASP) via Agente Security Audit
+- /define-slo [spec] — define SLOs, alertas e runbook via Agente SRE
+- /generate-api-docs — gera/atualiza openapi.yaml via Agente API Docs
+
+### Operação contínua
 - /quick-fix [descrição] — correção pequena (≤3 arquivos), sem cerimônia de SPEC
 - /pause-session — salva o estado atual e cria HANDOFF.md para retomada posterior
 - /resume-session — retoma sessão a partir do HANDOFF.md
 - /map-codebase [path?] — analisa codebase existente e gera documentação em .specs/codebase/
-- /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
+- /retrospect — revisão de milestone: velocity, lições, atualiza KNOWLEDGE.md
 
 ## Tecnologias deste projeto
 - Linguagem: [TypeScript / Python / Java / etc.]

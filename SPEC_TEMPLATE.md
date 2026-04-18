@@ -27,6 +27,54 @@ Remova seções marcadas como opcionais se não se aplicarem. Não deixe campos 
 
 ---
 
+## Hipóteses de Negócio *(obrigatório para P1; opcional para P2/P3)*
+
+> Cada FR de prioridade P1 deve declarar qual hipótese de negócio valida.
+> Uma hipótese é falsificável: tem uma condição de sucesso mensurável e um prazo para medição.
+> Hipóteses derivam do `DISCOVERY.md` (se existir) ou são declaradas aqui pela primeira vez.
+
+| FR | Hipótese que valida | Evento de medição | Critério de sucesso | Prazo |
+|---|---|---|---|---|
+| FR-001 | [ex: usuários querem acompanhar planos de ação em tempo real] | [ex: evento `action_plan_viewed` após criação] | [ex: 60% dos planos criados são visualizados em 48h] | [ex: 30 dias após release] |
+| FR-002 | [ex: notificações aumentam taxa de conclusão de tarefas] | [ex: `task_completed` com `source: notification`] | [ex: taxa de conclusão ≥ 15% maior no grupo com notificação] | [ex: 45 dias após release] |
+
+---
+
+## Métricas de Sucesso do SPEC
+
+> Como saberemos que esta feature funcionou após o lançamento?
+> Defina antes de implementar — métricas definidas depois do lançamento são "metrics to justify", não "metrics to learn".
+> Separe métricas de negócio (impacto real) de métricas de implementação (testes, coverage).
+
+| Tipo | Métrica | Baseline atual | Meta após release | Como medir |
+|---|---|---|---|---|
+| **Negócio** | [ex: taxa de conclusão de planos de ação] | [ex: 42%] | [ex: ≥ 55%] | [ex: evento `action_plan_completed` / `action_plan_created`] |
+| **Qualidade** | [ex: taxa de erro do endpoint POST /action-plans] | [ex: novo endpoint] | [ex: < 0.1%] | [ex: ratio 5xx / total no dashboard] |
+| **Performance** | [ex: latência p95 de GET /action-plans] | [ex: novo endpoint] | [ex: < 300ms] | [ex: trace no APM] |
+
+---
+
+## Impacto em UX *(obrigatório quando camada Presentation é afetada)*
+
+> Descreva quais telas existentes são modificadas e quais são novas.
+> Liste os fluxos de usuário afetados e os pontos de entrada.
+> Não é necessário wireframe detalhado — é suficiente descrever o fluxo textualmente.
+
+**Telas afetadas:**
+- [ex: `/dashboard` — adiciona card de resumo de planos ativos]
+- [ex: `/action-plans/new` — nova tela de criação]
+
+**Fluxo principal:**
+[ex: Usuário acessa `/action-plans` → clica em "Novo plano" → preenche formulário 5W2H → salva → retorna à listagem com plano recém-criado visível]
+
+**Fluxos de erro:**
+[ex: Campos obrigatórios vazios → mensagem de validação inline, foco no primeiro campo inválido]
+
+**Design tokens / componentes novos:**
+[ex: nenhum — usa componentes existentes do Design System | ex: novo componente `ActionStatusBadge`]
+
+---
+
 ## User Stories
 
 > Prioridades: **P1** = crítica (bloqueia valor), **P2** = importante (entrega valor significativo), **P3+** = desejável (melhoria).
@@ -393,6 +441,8 @@ interface [Nome]Repository {
 | **Plano de Testes × Cenários GWT** | Cada cenário GWT tem pelo menos um teste planejado no Plano de Testes? | [ ] |
 | **Impacto em Banco × Entidades** | As migrations planejadas nos SPRINTs 1 e 3 cobrem todas as entidades modeladas? | [ ] |
 | **i18n × View** | Todas as strings visíveis ao usuário têm chave i18n definida na tabela do SPRINT 4? | [ ] |
+| **Hipóteses × FRs P1** | Cada FR de prioridade P1 declara qual hipótese valida e como medir? | [ ] |
+| **Métricas × Hipóteses** | As métricas de sucesso são mensuráveis e têm baseline e meta definidos? | [ ] |
 | **Clarify** | Todas as ambiguidades foram resolvidas? | [ ] |
 
 > **Regra:** Só inicie os SPRINTs após todos os itens marcados. Inconsistências identificadas aqui devem ser corrigidas no SPEC antes da implementação.
@@ -412,4 +462,6 @@ Execute `/review-arch` após concluir todos os sprints. Só marque como `conclu�
 - [ ] NFRs validados (performance medida, segurança testada)
 - [ ] Chaves i18n adicionadas em todos os locales
 - [ ] Migrations executadas e testadas em ambiente de staging
+- [ ] Hipóteses de negócio registradas com evento de medição configurado (tracking implementado)
+- [ ] Métricas de sucesso com baseline registrado antes do release
 - [ ] SPEC atualizado: `Status: concluído` e `Aprovado em:` preenchido
