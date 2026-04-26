@@ -3,6 +3,10 @@
 Guia completo do Kit de Arquitetura SaaS para desenvolvimento com IA (vibe coding).
 Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 
+> **Versão de referência deste arquivo:** `v1.3.0` — última sincronização completa com o kit
+> **Versão atual do kit:** `v1.4.0` — consulte `CHANGELOG.md` para ver o que mudou desde então
+> ⚠️ Atualize este bloco ao sincronizar este arquivo com uma nova versão do kit.
+
 ---
 
 ## Sumário
@@ -28,6 +32,9 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
    - [3.6 GLOSSARY_TEMPLATE.md — Ubiquitous Language](#36-glossary_templatemd--ubiquitous-language)
    - [3.7 GIT_WORKFLOW.md — Estratégia de Branches por SPEC](#37-git_workflowmd--estratégia-de-branches-por-spec)
    - [3.8 KNOWLEDGE_TEMPLATE.md — Registro de Lições Aprendidas](#38-knowledge_templatemd--registro-de-lições-aprendidas)
+   - [3.9 DISCOVERY_TEMPLATE.md — Validação de Problema/Ideia](#39-discovery_templatemd--validação-de-problemaideia)
+   - [3.10 PROJECT_TEMPLATE.md — Personas e North Star](#310-project_templatemd--personas-e-north-star)
+   - [3.11 ROADMAP_TEMPLATE.md — Priorização com RICE Score](#311-roadmap_templatemd--priorização-com-rice-score)
 4. [Preparando um Novo Projeto SaaS](#4-preparando-um-novo-projeto-saas)
    - [Opção A: Skill `/init-sdd-saas` (recomendado)](#opção-a-inicialização-com-a-skill-init-sdd-saas)
    - [Opção B: Inicialização Manual (passo a passo)](#opção-b-inicialização-manual-passo-a-passo)
@@ -53,10 +60,11 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 7. [Configurando os Agentes como Slash Commands](#7-configurando-os-agentes-como-slash-commands)
    - [O que são Slash Commands no Claude Code](#o-que-são-slash-commands-no-claude-code)
    - [Usando os arquivos prontos da pasta "Slash Commands"](#usando-os-arquivos-prontos-da-pasta-slash-commands)
-   - [Criando os comandos manualmente](#criando-os-6-comandos-do-kit)
+   - [Criando os comandos manualmente](#criando-os-10-comandos-do-kit)
    - [Como usar os slash commands](#como-usar-os-slash-commands)
    - [Exemplo: AçãoPlus — Slash Commands configurados](#exemplo-açãoplus--slash-commands-configurados)
    - [Índice de Exemplos do AçãoPlus](#índice-de-exemplos-do-açãoplus-neste-guia)
+   - [7.5 Skill arch-guide — Clean Architecture + DDD global](#75-skill-arch-guide--clean-architecture--ddd-global)
 8. [Recuperação de Problemas Comuns](#8-recuperação-de-problemas-comuns)
 9. [Checklist Completo — Do Zero ao Sistema em Produção](#9-checklist-completo--do-zero-ao-sistema-em-produção)
    - [Fase A: Preparação do Ambiente](#fase-a-preparação-do-ambiente-faça-uma-vez-por-projeto)
@@ -192,6 +200,13 @@ Neste kit, cada passo do Spec-Kit é executado por um **Agente** (definido em `A
 - **[Aggregate Root](#aggregate-root):** Entidade principal de um grupo de objetos relacionados. `ActionPlan` é o Aggregate Root que controla suas `Tasks`.
 - **[Unit of Work](#unit-of-work):** Quando um Use Case precisa persistir em dois repositórios na mesma transação, usa-se o padrão Unit of Work — uma interface definida no domínio/shared que agrupa operações atômicas sem acoplar o Use Case à infraestrutura (ver `ARCHITECTURE.md` seção 7).
 - **Domain Events — Sync vs Async:** Eventos dentro do mesmo bounded context são disparados sincronamente no Use Case. Eventos entre bounded contexts diferentes usam o Outbox Pattern para garantia de entrega (ver `ARCHITECTURE.md` seção 19).
+
+**Resoluções de conflito (ver `ARCHITECTURE.md` seção 17):**
+Quatro conflitos recorrentes têm resolução documentada para evitar ambiguidade entre agentes:
+- **TDD vs. YAGNI:** Testes obrigatórios para Domínio e Application; opcionais para Infra e Apresentação
+- **Fail Fast vs. Resilience:** Fail Fast no domínio (erros de negócio devem propagar); Resilience na infra (retries, circuit breaker)
+- **KISS vs. Clean Architecture:** Queries triviais (sem regra de negócio, apenas leitura direta) podem ir direto à infra — critério "Trivial Query Path"
+- **Multi-Model Routing:** Os agentes Analyze e Review devem usar modelo ≥ ao usado na Implementação — nunca revisar com modelo menos capaz do que o que gerou o código
 
 ---
 
@@ -780,6 +795,53 @@ Você gasta tokens diagnosticando o mesmo problema que já foi resolvido. A IA r
 
 ---
 
+### 3.9 DISCOVERY_TEMPLATE.md — Validação de Problema/Ideia
+
+**O que é:** Template para validar se um problema merece um SaaS antes de escrever qualquer SPEC. Copiado como `DISCOVERY.md` pelo Agente Discovery (`/discover`).
+
+**Por que fazer:**
+Sem esta etapa, você cria SPECs de funcionalidades que ninguém pediu ou para problemas que não existem. O DISCOVERY.md força a resposta para: "Quem tem este problema?", "O problema é real?" e "Esta solução é a mais simples possível?" antes de qualquer linha de código.
+
+**O que acontece se não fizer:**
+Você implementa o produto inteiro e descobre que a hipótese central estava errada. Com o DISCOVERY.md, esse risco é avaliado em 1 hora de conversa com o Claude Code.
+
+**Quando usar:** Execute `/discover` antes do primeiro SPEC de qualquer produto novo. Para features em produto existente, use apenas se houver incerteza sobre a validade da hipótese.
+
+**Estrutura do arquivo:**
+
+| Seção | O que contém |
+|---|---|
+| **1. Problema** | Declaração do problema + 5 Whys |
+| **2. Lean Canvas** | Problema, solução, proposta de valor, segmentos |
+| **3. Personas** | Jobs to Be Done + dores + ganhos |
+| **4. Hipóteses** | Tabela: Hipótese / Critério de validação / Status |
+| **5. North Star** | Métrica principal de sucesso do produto |
+| **6. Veredicto** | Go / No-Go com justificativa |
+
+---
+
+### 3.10 PROJECT_TEMPLATE.md — Personas e North Star
+
+**O que é:** Template de visão estratégica do projeto — personas com Jobs to Be Done e North Star Metric. Copiado como `PROJECT.md` durante a inicialização.
+
+**Por que fazer:**
+O `STATE.md` documenta decisões arquiteturais. O `PROJECT.md` documenta *para quem* e *por quê* o produto existe. Sem ele, a IA tende a gerar soluções tecnicamente corretas mas desconectadas do usuário real.
+
+**Quando usar:** Preencha antes do primeiro SPEC. Revisione ao entrar em um novo bounded context ou ao pivotar o produto.
+
+---
+
+### 3.11 ROADMAP_TEMPLATE.md — Priorização com RICE Score
+
+**O que é:** Template para priorizar features usando RICE Score (Reach × Impact × Confidence ÷ Effort), hipótese por feature e seção de Experimentos.
+
+**Por que fazer:**
+Evita a armadilha de implementar a feature mais fácil em vez da mais valiosa. Com o RICE Score, cada feature tem um número que justifica sua posição na fila.
+
+**Quando usar:** Antes de iniciar um novo ciclo de features. Atualize o score após cada retrospectiva (`/retrospect`).
+
+---
+
 ## 4. Preparando um Novo Projeto SaaS
 
 Você tem duas opções para inicializar um novo projeto com o kit:
@@ -1139,13 +1201,14 @@ Esta seção descreve o ciclo completo do zero até uma feature funcionando, pas
 ### Fase 0: Concepção da Ideia
 
 **O que fazer:**
-1. Defina o problema que o SaaS resolve em uma frase
-2. Identifique o público-alvo
-3. Liste as features principais (não mais de 5 para o MVP)
-4. Identifique os [bounded contexts](#bounded-context-contexto-delimitado) (domínios do negócio)
+1. Execute `/discover` para validar o problema/ideia antes de qualquer SPEC — o Agente Discovery gera o `DISCOVERY.md` com personas, hipóteses e veredicto go/no-go
+2. Defina o problema que o SaaS resolve em uma frase
+3. Identifique o público-alvo
+4. Liste as features principais (não mais de 5 para o MVP)
+5. Identifique os [bounded contexts](#bounded-context-contexto-delimitado) (domínios do negócio)
 
 **Por que fazer:**
-Sem esta etapa, você começa a criar SPECs sem saber o escopo do produto. A IA precisa saber qual é o negócio central do SaaS para criar [bounded contexts](#bounded-context-contexto-delimitado) corretos e usar a [Ubiquitous Language](#ubiquitous-language-linguagem-ubíqua) adequada.
+Sem esta etapa, você começa a criar SPECs sem saber o escopo do produto. A IA precisa saber qual é o negócio central do SaaS para criar [bounded contexts](#bounded-context-contexto-delimitado) corretos e usar a [Ubiquitous Language](#ubiquitous-language-linguagem-ubíqua) adequada. O `/discover` antecipa se a hipótese central é válida antes de qualquer investimento de implementação.
 
 **O que acontece se não fizer:**
 Você começa criando SPECs isolados sem conexão entre si. Depois de 3 features, percebe que os [bounded contexts](#bounded-context-contexto-delimitado) estão errados e precisa refatorar tudo. Esta etapa leva 30 minutos e economiza dias de retrabalho.
@@ -2004,7 +2067,16 @@ avança para o próximo SPRINT
 
 2. Atualize o SPEC: `Status: concluído` e preencha `Aprovado em:` com a data
 
-3. Para a próxima feature, repita desde a [Fase 2](#fase-2-criar-o-primeiro-spec-com-o-agente-spec)
+3. Execute o **pipeline pós-SPRINT** com os agentes especializados (opcional mas recomendado em features de produção):
+
+```
+/security-audit [spec]        → Threat modeling + OWASP Top 10
+/define-slo [spec]            → Define SLOs, error budgets e runbooks
+/generate-api-docs [spec]     → Gera documentação OpenAPI/README de endpoints
+/retrospect [spec]            → Analisa velocidade e atualiza KNOWLEDGE.md
+```
+
+4. Para a próxima feature, repita desde a [Fase 2](#fase-2-criar-o-primeiro-spec-com-o-agente-spec)
 
 **Por que fazer:**
 Fechar formalmente um SPEC cria um registro histórico: quando foi concluído, quais decisões foram tomadas, quais ressalvas existem. Isso é essencial quando você retoma o projeto depois de semanas ou quando onboarda uma nova pessoa no time.
@@ -2029,6 +2101,13 @@ Sem o fechamento formal, você não sabe o que foi ou não foi implementado. Em 
 | `/pause-session` | — | Encerrar sessão com estado salvo | `STATE.md` + `HANDOFF_TEMPLATE.md` |
 | `/resume-session` | — | Retomar após pausa ou crash | `HANDOFF.md` + `STATE.md` + `KNOWLEDGE.md` (se existir) |
 | `/map-codebase [path?]` | — | Adotar kit em projeto com código existente | Arquivos do diretório informado |
+| `/discover [ideia]` | Agente Discovery | Antes do primeiro SPEC — valida problema/ideia | Descrição livre do problema ou produto |
+| `/init-devops` | Agente DevOps | Setup inicial de CI/CD, Dockerfile, .env.example, IaC | `ARCHITECTURE.md` + stack do projeto |
+| `/update-pipeline` | Agente DevOps | Atualizar pipeline CI/CD existente | Pipeline atual + mudanças desejadas |
+| `/security-audit [spec]` | Agente Security Audit | Pós-SPRINT com impacto em segurança | SPEC + código implementado + `ARCHITECTURE.md` seção 21 |
+| `/define-slo [spec]` | Agente SRE | Definir SLOs, error budgets e runbooks de features críticas | SPEC + NFRs + infra atual |
+| `/generate-api-docs [spec]` | Agente API Docs | Gerar documentação de endpoints após SPRINT 4 | SPEC + código de controllers + ViewModels |
+| `/retrospect [spec]` | Agente Retrospectiva | Pós-fechamento de feature — análise de velocidade e lições | SPEC concluído + `KNOWLEDGE.md` |
 
 **Observações importantes:**
 - `[spec]` é o caminho relativo para o arquivo SPEC, ex: `specs/action-plan/create-action-plan.md`
@@ -2051,7 +2130,7 @@ Um slash command é um arquivo `.md` em `.claude/commands/` que:
 
 ### Usando os arquivos prontos da pasta "Slash Commands"
 
-Este kit já vem com todos os 10 comandos prontos para uso na pasta `Slash Commands/`. Para utilizá-los no seu projeto:
+Este kit já vem com todos os 17 comandos prontos para uso na pasta `Slash Commands/`. Para utilizá-los no seu projeto:
 
 **Passo 1:** Certifique-se de que a pasta `.claude/commands/` existe no seu projeto. Se não existir, crie-a:
 ```bash
@@ -2070,13 +2149,20 @@ cp /caminho/para/o/kit/Slash\ Commands/pause-session.md    .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/resume-session.md   .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/map-codebase.md     .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/forensics-sprint.md .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/discover.md         .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/init-devops.md      .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/update-pipeline.md  .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/security-audit.md   .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/define-slo.md       .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/generate-api-docs.md .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/retrospect.md       .claude/commands/
 ```
 
 **Passo 3:** Verifique que os arquivos foram copiados:
 ```bash
 ls .claude/commands/
 ```
-Você deve ver 10 arquivos: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`, `quick-fix.md`, `pause-session.md`, `resume-session.md`, `map-codebase.md`, `forensics-sprint.md`
+Você deve ver 17 arquivos: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`, `quick-fix.md`, `pause-session.md`, `resume-session.md`, `map-codebase.md`, `forensics-sprint.md`, `discover.md`, `init-devops.md`, `update-pipeline.md`, `security-audit.md`, `define-slo.md`, `generate-api-docs.md`, `retrospect.md`
 
 **Passo 4:** Para o CLAUDE.md inicial do seu projeto, use o template em `Slash Commands/CLAUDE.md` como base — copie, renomeie e preencha com os dados do seu projeto:
 ```bash
@@ -2217,7 +2303,14 @@ acaoplus/
     │   ├── pause-session.md
     │   ├── resume-session.md
     │   ├── map-codebase.md
-    │   └── forensics-sprint.md
+    │   ├── forensics-sprint.md
+    │   ├── discover.md
+    │   ├── init-devops.md
+    │   ├── update-pipeline.md
+    │   ├── security-audit.md
+    │   ├── define-slo.md
+    │   ├── generate-api-docs.md
+    │   └── retrospect.md
     └── settings.json
 ```
 
@@ -2298,6 +2391,46 @@ Use esta tabela para encontrar rapidamente qualquer exemplo do AçãoPlus:
 
 ---
 
+### 7.5 Skill `arch-guide` — Clean Architecture + DDD global
+
+A skill `arch-guide` é uma skill **globalmente instalável** (fora de qualquer projeto específico) que traz orientação de Clean Architecture e DDD para qualquer projeto GSD2.
+
+**Instalação (uma vez por máquina):**
+```bash
+cp -r /caminho/para/o/kit/Skills/arch-guide ~/.claude/skills/
+```
+
+**Três modos de uso:**
+
+| Modo | Comando | O que faz |
+|---|---|---|
+| `init` | `/arch-guide init` | Inicializa o projeto com `ARCHITECTURE.md` e `GLOSSARY.md` baseados em templates DDD |
+| `guide` | `/arch-guide guide [domínio]` | Orienta o design de um bounded context, entidades e Use Cases |
+| `review` | `/arch-guide review [caminho]` | Detecta violações arquiteturais (dependências invertidas, lógica de negócio fora do domínio, etc.) |
+
+**Arquivos da skill:**
+```
+Skills/arch-guide/
+├── SKILL.md                         ← Router dos 3 modos
+├── README.md                        ← Guia completo em português
+├── workflows/
+│   ├── init-project.md              ← Fluxo de setup
+│   ├── guide-design.md              ← Fluxo de modelagem DDD
+│   └── review-code.md               ← Fluxo de revisão arquitetural
+├── references/
+│   ├── clean-architecture.md        ← Regras de camadas e dependências
+│   ├── ddd-patterns.md              ← Padrões táticos DDD com exemplos em português
+│   ├── phase-guards.md              ← Escopo de cada agente GSD2 por fase
+│   └── testing-strategy.md         ← Pirâmide de testes por camada
+└── templates/
+    ├── ARCHITECTURE.md              ← Template de constituição arquitetural
+    └── GLOSSARY.md                  ← Template de vocabulário de bounded context
+```
+
+**Nota:** Esta skill é independente do projeto — instale uma vez e use em qualquer SaaS que desenvolver com o kit.
+
+---
+
 ## 8. Recuperação de Problemas Comuns
 
 | Problema | Causa provável | O que fazer |
@@ -2332,6 +2465,7 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 
 **Opção A — Com a skill (recomendado):**
 - [ ] **Skill instalada (uma vez por máquina):** `Skills/init-sdd-saas.md` copiado para `~/.claude/commands/` conforme [Opção A da Seção 4](#opção-a-inicialização-com-a-skill-init-sdd-saas)
+- [ ] **Skill arch-guide instalada (uma vez por máquina):** `Skills/arch-guide/` copiado para `~/.claude/skills/` conforme [Seção 7.5](#75-skill-arch-guide--clean-architecture--ddd-global)
 - [ ] **Projeto inicializado:** Execute `/init-sdd-saas /caminho/para/o/kit` no Claude Code dentro da pasta do novo projeto — responda as perguntas sobre nome, stack e bounded contexts
 
 **Opção B — Manual (passo a passo):**
@@ -2363,6 +2497,7 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 
 *Repita este bloco para cada nova funcionalidade do produto.*
 
+- [ ] **Discovery executado (se nova hipótese):** Execute [`/discover [ideia]`](#fase-0-concepção-da-ideia) para validar o problema antes de escrever qualquer SPEC — veredicto Go antes de avançar
 - [ ] **SPEC gerado:** Execute [`/new-spec [descrição da feature]`](#fase-2-criar-o-primeiro-spec-com-o-agente-spec) ou crie manualmente baseado no `SPEC_TEMPLATE.md`. Arquivo salvo em `specs/[bounded-context]/[verbo]-[substantivo].md`
 - [ ] **Seção Clarify resolvida:** Todas as ambiguidades identificadas pelo Agente Spec têm resposta na coluna "Decisão / Resposta" (ver [Fase 3](#fase-3-revisar-e-aprovar-o-spec))
 - [ ] **User Stories revisadas:** Fazem sentido para o negócio? Estão priorizadas corretamente (P1/P2/P3)?
@@ -2384,6 +2519,11 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 - [ ] **Review executado e aprovado:** Execute [`/review-arch [spec] [n]`](#fase-7-revisar-sprint-1-com-o-agente-review) — veredicto deve ser **APROVADO** ou **APROVADO COM RESSALVAS** (nunca avance com REPROVADO)
 - [ ] **Ressalvas registradas (se houver):** Ressalvas do Review anotadas na seção correspondente do SPEC para acompanhamento
 - [ ] **(Se REPROVADO repetidamente)** Execute [`/forensics-sprint [spec] [n]`](#6-comandos-claude-code--referência-completa) para diagnóstico estruturado antes de tentar nova implementação
+- [ ] **(Pipeline pós-SPRINT — features de produção)** Execute os agentes especializados após todos os SPRINTs aprovados:
+  - [ ] [`/security-audit [spec]`](#6-comandos-claude-code--referência-completa) — auditoria OWASP Top 10 e threat modeling
+  - [ ] [`/define-slo [spec]`](#6-comandos-claude-code--referência-completa) — SLOs, error budgets e runbooks (features críticas)
+  - [ ] [`/generate-api-docs [spec]`](#6-comandos-claude-code--referência-completa) — documentação OpenAPI dos endpoints (após SPRINT 4)
+  - [ ] [`/retrospect [spec]`](#6-comandos-claude-code--referência-completa) — análise de velocidade e atualização do KNOWLEDGE.md
 
 ---
 
@@ -2425,6 +2565,9 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 | `GLOSSARY_TEMPLATE.md` | Template de vocabulário de domínio | Você (para criar GLOSSARY) | Antes do 1º SPEC de cada contexto |
 | `GIT_WORKFLOW.md` | Convenção de branches por SPEC (`spec/<slug>`) | Você (referência) | Leia uma vez no início do projeto |
 | `KNOWLEDGE_TEMPLATE.md` | Template para `KNOWLEDGE.md` — lições entre sessões | `/pause-session` + `/resume-session` | Registre ao pausar; leia ao retomar |
+| `DISCOVERY_TEMPLATE.md` | Template para `DISCOVERY.md` — validação de problema/ideia | Agente Discovery (`/discover`) | Antes do primeiro SPEC de produto novo |
+| `PROJECT_TEMPLATE.md` | Visão estratégica — personas com Jobs to Be Done e North Star | Você (preencher no setup) | No início do projeto; revisitar ao pivotar |
+| `ROADMAP_TEMPLATE.md` | Priorização de features com RICE Score e hipóteses | Você (referência) | Antes de cada ciclo de features; após `/retrospect` |
 
 ---
 

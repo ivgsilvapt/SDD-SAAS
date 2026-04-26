@@ -112,6 +112,14 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 - `Slash Commands/resume-session.md`   → `.claude/commands/resume-session.md`
 - `Slash Commands/map-codebase.md`     → `.claude/commands/map-codebase.md`
 - `Slash Commands/forensics-sprint.md` → `.claude/commands/forensics-sprint.md`
+- `Slash Commands/discover.md`         → `.claude/commands/discover.md`
+- `Slash Commands/init-devops.md`      → `.claude/commands/init-devops.md`
+- `Slash Commands/update-pipeline.md`  → `.claude/commands/update-pipeline.md`
+- `Slash Commands/security-audit.md`   → `.claude/commands/security-audit.md`
+- `Slash Commands/define-slo.md`       → `.claude/commands/define-slo.md`
+- `Slash Commands/generate-api-docs.md` → `.claude/commands/generate-api-docs.md`
+- `Slash Commands/retrospect.md`       → `.claude/commands/retrospect.md`
+- `Slash Commands/update-kit.md`       → `.claude/commands/update-kit.md`
 
 Use Read para ler cada arquivo do kit e Write para criá-lo no destino.
 
@@ -162,17 +170,33 @@ Quando acionar um agente via slash command, consulte AGENTS.md para o contexto m
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
 
 ## Comandos disponíveis
+
+### Pré-SPEC
+- /discover [ideia] — valida problema/ideia via Agente Discovery, gera DISCOVERY.md
+
+### Ciclo SPEC → Review
 - /new-spec [descrição da feature] — cria novo SPEC via Agente Spec
-- /impl-sprint [spec] [n] — implementa SPRINT N via Agente Implementation
 - /review-arch [spec] analyze — valida consistência do SPEC via Agente Analyze
-- /review-arch [spec] [n] — revisa código do SPRINT N via Agente Review
+- /impl-sprint [spec] [n] — implementa SPRINT N via Agente Implementation
 - /test-sprint [spec] [n] — gera testes do SPRINT N via Agente Testing
+- /review-arch [spec] [n] — revisa código do SPRINT N via Agente Review
 - /migrate-sprint [spec] [n] — gera migration SQL do SPRINT N via Agente Migration
+- /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
+
+### Pós-Review / Produção
+- /init-devops [cloud] — configura CI/CD, Dockerfile e .env.example via Agente DevOps
+- /update-pipeline [spec] — atualiza pipeline após novos serviços adicionados pelo SPEC
+- /security-audit [spec|full] — auditoria STRIDE + OWASP via Agente Security Audit
+- /define-slo [spec] — define SLOs, alertas e runbook via Agente SRE
+- /generate-api-docs — gera/atualiza openapi.yaml via Agente API Docs
+
+### Operação contínua
 - /quick-fix [descrição] — correção pequena (≤3 arquivos), sem cerimônia de SPEC
 - /pause-session — salva o estado atual e cria HANDOFF.md para retomada posterior
 - /resume-session — retoma sessão a partir do HANDOFF.md
 - /map-codebase [path?] — analisa codebase existente e gera documentação em .specs/codebase/
-- /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
+- /retrospect — revisão de milestone: velocity, lições, atualiza KNOWLEDGE.md
+- /update-kit [caminho-do-kit] — atualiza os arquivos de referência do kit no projeto
 
 ## Tecnologias deste projeto
 - Linguagem: [LINGUAGEM]
@@ -213,15 +237,15 @@ Apresente ao desenvolvedor o resumo final:
 Estrutura criada:
 meu-projeto/
 ├── .claude/
-│   └── commands/          ← 10 slash commands prontos
-│       ├── new-spec.md
-│       ├── impl-sprint.md
-│       ├── review-arch.md
-│       ├── test-sprint.md
-│       ├── migrate-sprint.md
-│       ├── quick-fix.md
-│       ├── pause-session.md
-│       ├── resume-session.md
+│   └── commands/          ← 18 slash commands prontos
+│       ├── new-spec.md          ├── discover.md
+│       ├── impl-sprint.md       ├── init-devops.md
+│       ├── review-arch.md       ├── update-pipeline.md
+│       ├── test-sprint.md       ├── security-audit.md
+│       ├── migrate-sprint.md    ├── define-slo.md
+│       ├── quick-fix.md         ├── generate-api-docs.md
+│       ├── pause-session.md     ├── retrospect.md
+│       ├── resume-session.md    ├── update-kit.md
 │       ├── map-codebase.md
 │       └── forensics-sprint.md
 ├── src/

@@ -49,6 +49,7 @@ daquele agente e inclua apenas os arquivos necessários — não inclua o kit in
 - /resume-session — retoma sessão a partir do HANDOFF.md
 - /map-codebase [path?] — analisa codebase existente e gera documentação em .specs/codebase/
 - /retrospect — revisão de milestone: velocity, lições, atualiza KNOWLEDGE.md
+- /update-kit [caminho-do-kit] — atualiza os arquivos de referencia do kit no projeto
 
 ## Tecnologias deste projeto
 - Linguagem: [TypeScript / Python / Java / etc.]

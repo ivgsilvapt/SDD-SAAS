@@ -1,5 +1,7 @@
 # ARCHITECTURE.md
 
+> **Versão do kit:** v1.4.0 — consulte `CHANGELOG.md` para histórico de mudanças.
+
 Este documento é a **Constitution** deste SaaS. Deve ser fornecido à IA no início de cada sessão de vibe coding.
 
 **Arquivos complementares do kit:**
