@@ -1,0 +1,4 @@
+#!/bin/sh
+# Harness Template: pre-commit hook (Node.js)
+# Executado antes de cada git commit — roda lint-staged nos arquivos modificados
+npx lint-staged

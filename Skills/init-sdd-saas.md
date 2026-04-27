@@ -120,8 +120,23 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 - `Slash Commands/generate-api-docs.md` → `.claude/commands/generate-api-docs.md`
 - `Slash Commands/retrospect.md`       → `.claude/commands/retrospect.md`
 - `Slash Commands/update-kit.md`       → `.claude/commands/update-kit.md`
+- `Slash Commands/bootstrap-saas.md`   → `.claude/commands/bootstrap-saas.md`
+- `Slash Commands/upgrade-kit.md`      → `.claude/commands/upgrade-kit.md`
 
 Use Read para ler cada arquivo do kit e Write para criá-lo no destino.
+
+**Nota sobre templates físicos do harness (v2.0+):** Se o kit for v2.0+, após copiar os slash commands também copie os templates físicos para o projeto:
+- `harness/templates/docker/Dockerfile.node` (ou .python / .go conforme stack do PASSO 2)
+- `harness/templates/docker/docker-compose.dev.yml`
+- `harness/templates/docker/docker-compose.test.yml`
+- `harness/templates/docker/.dockerignore`
+- `harness/templates/env/.env.example`
+- `harness/templates/env/.env.test.example`
+- Toda a pasta `harness/templates/ci/github/` → `.github/workflows/`
+
+Ao copiar, substitua os placeholders `{{APP_NAME}}`, `{{NODE_VERSION}}`, `{{PORT}}`, `{{DB_NAME}}` com os valores coletados no PASSO 2. Isso garante que o projeto herda templates determinísticos em vez de gerá-los via LLM.
+
+Crie também `.harness/installed-version` com a versão atual do kit (leia do arquivo `VERSION` na raiz do kit).
 
 ---
 

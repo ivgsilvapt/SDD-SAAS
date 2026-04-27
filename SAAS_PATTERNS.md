@@ -5,6 +5,56 @@ Consulte este arquivo antes de modelar qualquer domínio multi-tenant, de billin
 
 ---
 
+## Usando @harness/saas-core (harness v2.0+)
+
+O harness fornece primitivas multi-tenant prontas em `harness/lib/saas-core/`. **Não reimplemente** TenantContext, TenantAwareEntity ou TenantAwareRepository — importe do harness.
+
+### Instalação (Node.js)
+```typescript
+// package.json
+"@harness/saas-core": "file:path/to/sdd-saas/harness/lib/saas-core/node"
+```
+
+### Uso essencial
+```typescript
+import {
+  TenantAwareEntity,
+  TenantAwareRepository,
+  TenantContext,
+  tenantMiddleware,
+} from '@harness/saas-core';
+
+// Entidade: tenantId obrigatório por design
+class Subscription extends TenantAwareEntity {
+  constructor(id: string, tenantId: string, public readonly plan: string) {
+    super(id, tenantId);
+  }
+}
+
+// Repositório: filtro de tenant automático
+class PrismaSubscriptionRepository extends TenantAwareRepository<Subscription> {
+  async findById(id: string): Promise<Subscription | null> {
+    const tenantId = this.currentTenantId; // automático
+    const row = await prisma.subscription.findFirst({ where: { id, tenantId } });
+    return row ? new Subscription(row.id, row.tenantId, row.plan) : null;
+  }
+  // ... outros métodos
+}
+
+// Middleware: registra tenantId no contexto por request
+app.use(tenantMiddleware); // extrai tenant_id do JWT
+```
+
+### Instalação (Python)
+```python
+from harness_saas_core import TenantAwareEntity, TenantAwareRepository, TenantContext, require_tenant
+```
+
+### Por que isso importa
+**Bug clássico de multi-tenant:** repositório sem filtro `tenantId` retorna dados de outro tenant. Com `TenantAwareRepository`, o campo `currentTenantId` está sempre disponível e o filtro é estruturalmente obrigatório — você não _pode_ esquecer.
+
+---
+
 ## 1. Multi-tenancy
 
 ### Comparativo de Estratégias

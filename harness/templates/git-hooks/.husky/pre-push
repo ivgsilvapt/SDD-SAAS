@@ -1,0 +1,4 @@
+#!/bin/sh
+# Harness Template: pre-push hook (Node.js)
+# Executa typecheck e testes rápidos antes do push — evita CI quebrado para o time
+npm run typecheck && npm run test:unit

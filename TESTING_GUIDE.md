@@ -5,6 +5,57 @@ Complementa `ARCHITECTURE.md` (seções 14 e 5).
 
 ---
 
+## Usando @harness/test-helpers (harness v2.0+)
+
+O harness fornece helpers de teste prontos em `harness/lib/test-helpers/`. **Não reimplemente** `InMemoryRepository`, builders ou fakes — importe do harness.
+
+### Instalação (Node.js)
+```typescript
+// package.json (devDependencies)
+"@harness/test-helpers": "file:path/to/sdd-saas/harness/lib/test-helpers/node"
+
+// ou, após publicar no npm privado:
+"@harness/test-helpers": "^2.0.0"
+```
+
+### Uso
+```typescript
+import { createInMemoryRepository, aTenant, FakeMailer } from '@harness/test-helpers';
+
+// Repositório in-memory com isolamento automático por tenantId
+const subscriptionRepo = createInMemoryRepository<Subscription>();
+const tenant = aTenant().withPlan('pro').build();
+
+// FakeMailer — captura emails sem SMTP
+const mailer = new FakeMailer();
+await mailer.send({ to: 'user@test.com', subject: 'Welcome' });
+mailer.assertSentTo('user@test.com');
+
+// Reset entre testes
+afterEach(() => {
+  subscriptionRepo._reset();
+  mailer.clear();
+});
+```
+
+### Instalação (Python)
+```python
+# pyproject.toml (dev dependencies)
+"harness-test-helpers @ {root}/path/to/sdd-saas/harness/lib/test-helpers/python"
+
+# Uso:
+from harness_test_helpers import create_in_memory_repository, a_tenant, FakeMailer
+
+repo = create_in_memory_repository()
+tenant = a_tenant().with_plan("pro").build()
+mailer = FakeMailer()
+```
+
+### Por que isso importa
+Bug clássico de multi-tenant em testes: `InMemorySubscriptionRepository.findById(id)` retorna a entidade **sem** verificar `tenantId`. O `createInMemoryRepository` do harness sempre verifica `tenantId` — o bug é impossível por design.
+
+---
+
 ## 0. TDD — Mecanismo de Execução dentro do SPRINT
 
 TDD é o mecanismo que transforma os cenários Given-When-Then do SPEC em código verificável. Para cada cenário GWT, aplique o ciclo:

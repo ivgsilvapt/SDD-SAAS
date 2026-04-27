@@ -1,0 +1,46 @@
+# Harness Template: CD Production — deploy com aprovação manual
+# Trigger: tag semântica (ex: v1.2.3)
+# Requer: environment "production" configurado no repositório GitHub com required reviewers
+
+name: CD Production
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag ${{ vars.IMAGE_REGISTRY }}/${{ github.event.repository.name }}:${{ env.VERSION }} \
+            --tag ${{ vars.IMAGE_REGISTRY }}/${{ github.event.repository.name }}:latest \
+            .
+
+      - name: Push image
+        run: |
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | \
+            docker login ${{ vars.IMAGE_REGISTRY }} -u ${{ secrets.REGISTRY_USER }} --password-stdin
+          docker push ${{ vars.IMAGE_REGISTRY }}/${{ github.event.repository.name }}:${{ env.VERSION }}
+          docker push ${{ vars.IMAGE_REGISTRY }}/${{ github.event.repository.name }}:latest
+
+      - name: Deploy
+        run: echo "Deploy ${{ env.VERSION }} to production — implementar conforme cloud provider"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

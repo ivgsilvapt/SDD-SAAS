@@ -1,0 +1,38 @@
+# Harness Template: Node.js Multi-Stage Dockerfile
+# Placeholders: {{NODE_VERSION}}, {{APP_NAME}}, {{PORT}}
+# Usage: substituir placeholders e copiar para raiz do projeto
+
+# ── Stage 1: instalar dependências de produção ──────────────────────────────
+FROM node:{{NODE_VERSION}}-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# ── Stage 2: build ──────────────────────────────────────────────────────────
+FROM node:{{NODE_VERSION}}-alpine AS builder
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# ── Stage 3: runtime (imagem mínima, non-root) ───────────────────────────────
+FROM node:{{NODE_VERSION}}-alpine AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 appuser
+
+COPY --from=deps --chown=appuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
+COPY --chown=appuser:nodejs package.json ./
+
+USER appuser
+
+EXPOSE {{PORT}}
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:{{PORT}}/health/live || exit 1
+
+CMD ["node", "dist/main.js"]

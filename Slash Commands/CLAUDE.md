@@ -49,7 +49,36 @@ daquele agente e inclua apenas os arquivos necessários — não inclua o kit in
 - /resume-session — retoma sessão a partir do HANDOFF.md
 - /map-codebase [path?] — analisa codebase existente e gera documentação em .specs/codebase/
 - /retrospect — revisão de milestone: velocity, lições, atualiza KNOWLEDGE.md
-- /update-kit [caminho-do-kit] — atualiza os arquivos de referencia do kit no projeto
+- /update-kit [caminho-do-kit] — atualiza os arquivos de referência do kit no projeto (docs metodológicos)
+- /upgrade-kit [versão] — aplica upgrade de versão do harness via .harness/installed-version
+
+### Harness (projetos novos)
+- /bootstrap-saas [stack] [cloud] [profile] — inicializa projeto novo em ~30 segundos com templates físicos do harness
+
+## Harness Version
+- Versão instalada: `cat .harness/installed-version`
+- Stack: `cat .harness/stack`
+- Para upgrade: `/upgrade-kit [nova-versão]`
+
+## Libs do Harness Disponíveis
+
+```typescript
+// Test helpers — não reimplemente InMemoryRepository ou builders
+import { createInMemoryRepository, aTenant, FakeMailer } from '@harness/test-helpers';
+
+// Primitivas multi-tenant — não reimplemente TenantContext ou TenantAwareRepository
+import { TenantAwareEntity, TenantAwareRepository, TenantContext } from '@harness/saas-core';
+
+// Observabilidade — não configure pino/prometheus/otel do zero
+import { logger, Correlation, collectDefaultMetrics } from '@harness/observability';
+```
+
+```python
+# Python equivalente
+from harness_test_helpers import create_in_memory_repository, a_tenant, FakeMailer
+from harness_saas_core import TenantAwareEntity, TenantAwareRepository, TenantContext
+from harness_observability import logger, Correlation
+```
 
 ## Tecnologias deste projeto
 - Linguagem: [TypeScript / Python / Java / etc.]

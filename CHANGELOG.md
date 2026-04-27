@@ -6,6 +6,46 @@ Versionamento semântico: MAJOR.MINOR.PATCH — MINOR para novas features, PATCH
 
 ---
 
+## [2.0.0] — 2026-04-27
+
+### Mudança Conceitual
+Transformação do kit de **gerador via LLM** para **harness reutilizável**. A partir desta versão, projetos herdam artefatos físicos determinísticos em vez de regenerar tudo via prompt a cada execução.
+
+### Adicionado
+- **`harness/templates/docker/`** — Dockerfiles multi-stage versionados para Node.js, Python e Go; docker-compose dev e test; .dockerignore padrão
+- **`harness/templates/ci/github/`** — 5 GitHub Actions workflows: CI (lint+test+build), CD staging, CD prod (com approval), security scan semanal, semantic-release
+- **`harness/templates/ci/gitlab/`** — `.gitlab-ci.yml` equivalente ao pipeline GitHub
+- **`harness/templates/env/`** — `.env.example` e `.env.test.example` padronizados para SaaS
+- **`harness/templates/git-hooks/`** — Husky (Node.js) e pre-commit (Python) com commitlint, lint-staged e typecheck
+- **`harness/templates/github/`** — CODEOWNERS, dependabot.yml, PR template, issue templates (bug/feature/spec), branch-protection.sh
+- **`harness/templates/devcontainer/`** — devcontainer.json para GitHub Codespaces/VS Code Dev Containers
+- **`harness/templates/vscode/`** — settings.json e extensions.json padronizados
+- **`harness/templates/.editorconfig`** — EditorConfig unificado Node.js + Python
+- **`harness/lib/test-helpers/node/`** — `@harness/test-helpers`: createInMemoryRepository, TenantBuilder, FakeMailer (TypeScript)
+- **`harness/lib/test-helpers/python/`** — `harness-test-helpers`: equivalente Python
+- **`harness/lib/saas-core/node/`** — `@harness/saas-core`: TenantId, TenantAwareEntity, TenantContext, TenantAwareRepository, tenant middleware (TypeScript)
+- **`harness/lib/saas-core/python/`** — `harness-saas-core`: equivalente Python
+- **`harness/lib/observability/node/`** — `@harness/observability`: logger (pino+redact), metrics (prom-client), tracer (OpenTelemetry), correlation (AsyncLocalStorage), health endpoints (TypeScript)
+- **`harness/lib/observability/python/`** — `harness-observability`: equivalente Python
+- **`harness/scripts/bootstrap-saas.sh`** — script idempotente de bootstrap completo; grava `.harness/installed-version` no projeto
+- **`harness/scripts/upgrade-kit.sh`** — gerencia upgrade de versão do harness instalado via `.harness/installed-version`
+- **`harness/scripts/setup.sh`** — sobe Docker dev, espera banco, roda migrations e seed
+- **Slash command `/bootstrap-saas`** — bootstrap de novo projeto SaaS em ~30 segundos
+- **Slash command `/upgrade-kit`** — upgrade do harness instalado no projeto (diferente de `/update-kit`)
+- **Skill `bootstrap-saas`** — instalável globalmente, chamável de qualquer projeto novo
+- **Skill `upgrade-kit`** — gerencia migrações entre versões do harness
+
+### Alterado
+- **`Skills/init-sdd-saas.md`** — refatorado para usar templates físicos de `harness/templates/` em vez de gerar Docker/CI/env via LLM
+- **`AGENTS.md`** — Agente DevOps atualizado para selecionar templates em vez de gerar do zero
+- **`TESTING_GUIDE.md`** — nova seção sobre uso de `@harness/test-helpers` com exemplos de import
+- **`SAAS_PATTERNS.md`** — seção multi-tenancy atualizada com referência a `@harness/saas-core`
+
+### Migração de v1.x → v2.0
+Projetos criados com `/init-sdd-saas` em versões anteriores continuam funcionando. Para adotar o harness em um projeto existente, use `/upgrade-kit 2.0.0` com `.harness/installed-version` apontando para a versão instalada.
+
+---
+
 ## [1.4.0] — 2026-04-18
 
 ### Adicionado

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Harness Template: commit-msg hook (Node.js)
+# Valida que a mensagem segue Conventional Commits
+npx --no-install commitlint --edit "$1"

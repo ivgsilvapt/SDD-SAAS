@@ -1,0 +1,17 @@
+# Harness Template: CODEOWNERS
+# Placeholder: {{GITHUB_OWNER}} — ex: @seu-usuario ou @sua-org/tech-lead
+# Copiar para .github/CODEOWNERS no projeto
+
+# Dono padrão de todos os arquivos
+* @{{GITHUB_OWNER}}
+
+# Domínio: revisão obrigatória do tech lead ou domain expert
+src/domain/ @{{GITHUB_OWNER}}
+harness/ @{{GITHUB_OWNER}}
+ARCHITECTURE.md @{{GITHUB_OWNER}}
+AGENTS.md @{{GITHUB_OWNER}}
+
+# Infraestrutura: revisão obrigatória de quem conhece CI/CD
+.github/ @{{GITHUB_OWNER}}
+Dockerfile @{{GITHUB_OWNER}}
+docker-compose*.yml @{{GITHUB_OWNER}}

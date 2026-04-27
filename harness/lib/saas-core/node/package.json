@@ -1,0 +1,24 @@
+{
+  "name": "@harness/saas-core",
+  "version": "2.0.0",
+  "description": "Primitivas multi-tenant reutilizáveis: TenantId, TenantAwareEntity, TenantContext, TenantAwareRepository, tenant middleware",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": ["**/*.js", "**/*.d.ts"],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0",
+    "@types/jest": "^29.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
+  },
+  "keywords": ["sdd-saas", "harness", "multi-tenant", "saas-core", "clean-architecture"],
+  "license": "MIT"
+}

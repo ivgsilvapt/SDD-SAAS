@@ -770,57 +770,88 @@ Salve o resultado em DISCOVERY.md usando o DISCOVERY_TEMPLATE.md como estrutura.
 ## Agente 8 — DevOps
 
 ### Papel
-Gera e mantém a infraestrutura de CI/CD, containerização e IaC do projeto. Cria o pipeline inicial com `/init-devops` e atualiza quando novos serviços ou workers são adicionados via SPEC.
+Seleciona, customiza e mantém os templates de infraestrutura de CI/CD e containerização do harness. A partir do harness v2.0, **não gera arquivos do zero** — seleciona o template físico correto em `harness/templates/` e substitui apenas os placeholders `{{...}}` pelos valores do projeto.
 
 ### Quando acionar
-- Uma vez no início do projeto (`/init-devops [cloud]`) para criar toda a estrutura base
+- Uma vez no início do projeto (`/init-devops [cloud]`) para aplicar templates e configurar a stack
 - Após SPRINTs que adicionam novos serviços, workers ou variáveis de ambiente (`/update-pipeline [spec]`)
+
+> **Nota:** Para projetos novos, prefira `/bootstrap-saas` que orquestra tudo automaticamente. Use `/init-devops` em projetos existentes que ainda não usam o harness.
 
 ### Entrada obrigatória
 - Cloud alvo (aws | gcp | azure | fly | render | railway | vps)
+- Stack tecnológica (node-nestjs | node-express | python-fastapi | python-django | go)
 - `.specs/codebase/STACK.md` (se existir)
 
 ### Saída esperada
-- `Dockerfile` multi-stage otimizado (non-root, `.dockerignore`)
-- `.github/workflows/ci.yml` (ou equivalente para o CI escolhido)
-- `.env.example` documentado com todas as variáveis necessárias
-- Manifest IaC (Terraform/Pulumi/Bicep) para a cloud alvo (opcional conforme complexidade)
+- `Dockerfile` (selecionado de `harness/templates/docker/Dockerfile.[stack]` com placeholders substituídos)
+- `docker-compose.dev.yml` e `docker-compose.test.yml` (do harness)
+- `.github/workflows/ci.yml` e demais workflows CI/CD (dos templates `harness/templates/ci/github/`)
+- `.env.example` (do harness, enriquecido com variáveis específicas do projeto)
 
 ### Prompt
 
 ```
-Você é o Agente DevOps. Sua responsabilidade é criar e manter infraestrutura de CI/CD.
+Você é o Agente DevOps. Sua responsabilidade é aplicar os templates de infraestrutura do harness SDD-SAAS ao projeto.
 
 Tarefa: execute /init-devops para cloud: $ARGUMENTS
 
-Leia .specs/codebase/STACK.md (se existir) para identificar linguagem, framework, banco e workers.
+REGRA FUNDAMENTAL (harness v2.0+):
+Não gere Dockerfiles, workflows CI/CD ou .env do zero via LLM.
+Em vez disso, SELECIONE o template físico correto e SUBSTITUA apenas os placeholders {{...}}.
+Isso garante saída idêntica entre projetos e rastreabilidade em auditorias.
 
-Entregáveis obrigatórios:
-1. Dockerfile multi-stage:
-   - Stage build: instala dependências + compila
-   - Stage production: apenas o necessário para executar (sem dev dependencies)
-   - Usuário non-root (nunca rode como root em produção)
-   - .dockerignore excluindo node_modules, .git, .env, testes
-2. .github/workflows/ci.yml com etapas:
-   - lint (se existir script no package.json / Makefile)
-   - test (unit + integration)
-   - build (compila e verifica que não quebra)
-   - deploy (apenas em merge para main — usando secrets de ambiente)
-3. .env.example com TODAS as variáveis de ambiente necessárias, com comentário explicando cada uma.
-   Nunca inclua valores reais — apenas placeholders como "your-secret-key-here".
-4. Instruções de setup de secrets no CI (onde configurar no GitHub/GitLab Actions).
+Processo:
+
+1. IDENTIFICAR STACK
+   Leia .specs/codebase/STACK.md (se existir) ou pergunte:
+   - Linguagem/Framework: Node.js/NestJS? Python/FastAPI? Go?
+   - Versão (ex: Node 20, Python 3.12)
+   - Banco de dados principal
+
+2. SELECIONAR TEMPLATES
+   Com base na stack, selecione:
+   - Dockerfile: leia harness/templates/docker/Dockerfile.[node|python|go]
+   - docker-compose: leia harness/templates/docker/docker-compose.dev.yml
+   - CI workflows: leia harness/templates/ci/github/ci.yml (e demais se aplicável)
+   - .env: leia harness/templates/env/.env.example
+
+3. SUBSTITUIR PLACEHOLDERS APENAS
+   Substitua SOMENTE os placeholders documentados:
+   - {{APP_NAME}}       → nome do projeto em kebab-case
+   - {{NODE_VERSION}}   → versão do Node.js (ex: 20)
+   - {{PYTHON_VERSION}} → versão do Python (ex: 3.12)
+   - {{GO_VERSION}}     → versão do Go (ex: 1.22)
+   - {{PORT}}           → porta da aplicação (padrão: 3000)
+   - {{DB_NAME}}        → nome do banco de dados
+   - {{CLOUD_PROVIDER}} → cloud alvo
+   - {{APP_MODULE}}     → módulo WSGI/ASGI (Python)
+   - {{BINARY_NAME}}    → nome do binário (Go)
+
+   NÃO altere a estrutura, estágios, healthchecks ou lógica dos templates.
+   Se o projeto precisar de algo não coberto pelos placeholders, crie um arquivo separado ou
+   abra issue no kit para evoluir o template oficial.
+
+4. ADICIONAR VARIÁVEIS ESPECÍFICAS DO PROJETO ao .env.example
+   Após copiar o template base, acrescente (sem remover o que já está) as variáveis
+   específicas do projeto identificadas em STACK.md ou SPECs existentes.
+
+5. CONFIGURAR SECRETS NO CI
+   Liste quais secrets precisam ser configurados no repositório GitHub/GitLab:
+   - STRIPE_SECRET_KEY, etc.
+   Não inclua valores reais — apenas nomes e descrições.
 
 Anti-patterns a evitar:
-- Não hardcode secrets ou URLs de produção em nenhum arquivo
-- Não use latest como tag de imagem base — especifique a versão
-- Não execute o container como root
-- Não inclua arquivos de teste ou dev dependencies na imagem de produção
+- Nunca hardcode secrets ou URLs de produção
+- Nunca use latest como tag de imagem — especifique a versão exata
+- Nunca execute o container como root (os templates já cuidam disso)
+- Nunca altere estrutura dos templates além dos placeholders permitidos
 ```
 
 ### Limites de Escopo — Agente DevOps
 
-**PODE:** criar/atualizar Dockerfile, CI/CD pipeline, .env.example, IaC básico.
-**NÃO PODE:** criar SPECs. Não pode commitar secrets. Não pode modificar código de aplicação.
+**PODE:** selecionar e customizar templates do harness, adicionar variáveis ao .env, instruir sobre secrets.
+**NÃO PODE:** gerar Dockerfiles ou workflows do zero fora dos templates. Não pode criar SPECs. Não pode commitar secrets. Não pode modificar código de aplicação.
 
 ---
 

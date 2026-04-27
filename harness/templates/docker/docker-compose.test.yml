@@ -1,0 +1,46 @@
+# Harness Template: docker-compose para testes isolados
+# Placeholders: {{APP_NAME}}, {{DB_NAME}}
+# Uso: docker compose -f docker-compose.test.yml up --abort-on-container-exit
+
+services:
+  test-runner:
+    build:
+      context: .
+      target: builder
+    container_name: {{APP_NAME}}-test-runner
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://postgres:postgres@test-db:5432/{{DB_NAME}}_test
+      - REDIS_URL=redis://test-redis:6379
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    command: npm run test:integration
+
+  test-db:
+    image: postgres:16-alpine
+    container_name: {{APP_NAME}}-test-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: {{DB_NAME}}_test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  test-redis:
+    image: redis:7-alpine
+    container_name: {{APP_NAME}}-test-redis
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5

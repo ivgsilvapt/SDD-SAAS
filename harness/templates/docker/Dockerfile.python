@@ -1,0 +1,31 @@
+# Harness Template: Python Multi-Stage Dockerfile
+# Placeholders: {{PYTHON_VERSION}}, {{APP_MODULE}}, {{PORT}}
+# {{APP_MODULE}} exemplo: app.main:app (FastAPI) ou myapp.wsgi:application (Django)
+
+# ── Stage 1: build de dependências ──────────────────────────────────────────
+FROM python:{{PYTHON_VERSION}}-slim AS builder
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+RUN pip install --upgrade pip
+COPY requirements.txt .
+RUN pip install --prefix=/install --no-cache-dir -r requirements.txt
+
+# ── Stage 2: runtime (non-root) ─────────────────────────────────────────────
+FROM python:{{PYTHON_VERSION}}-slim AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT={{PORT}}
+WORKDIR /app
+
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser
+
+COPY --from=builder /install /usr/local
+COPY --chown=appuser:appgroup . .
+
+USER appuser
+
+EXPOSE {{PORT}}
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:{{PORT}}/health/live')" || exit 1
+
+CMD ["gunicorn", "{{APP_MODULE}}", "--workers", "2", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:{{PORT}}"]
