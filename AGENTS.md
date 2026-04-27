@@ -89,6 +89,22 @@ Ideia (linguagem natural)
 
 ---
 
+## Harness Lifecycle (v2.0.0+)
+
+Comandos que gerenciam o ciclo de vida do **harness** instalado no projeto destino — distinto do ciclo de SPEC/SPRINT acima.
+
+| Comando | Quando usar | Lê | Escreve | Saída |
+|---|---|---|---|---|
+| `/bootstrap-saas [stack] [cloud] [profile]` | Criar projeto novo a partir do harness (preferencial em v2.0.0+) | `harness/templates/`, `harness/lib/`, `harness/scripts/bootstrap-saas.sh` | Estrutura completa do projeto destino + `.harness/installed-version` | Projeto pronto para `git push` em ~30s |
+| `/upgrade-kit [versão-alvo]` | Migrar um projeto existente para nova versão do harness | `.harness/installed-version` do projeto, diff de templates entre versões | Templates atualizados (com backup) + `.harness/installed-version` atualizado | Relatório de arquivos atualizados/conflitos |
+| `/update-kit [caminho-kit]` | Sincronizar **docs metodológicas** (ARCHITECTURE.md, AGENTS.md, templates de SPEC) — **distinto** de `/upgrade-kit` | Kit-fonte | Apenas arquivos `.md` de metodologia no projeto | Diff dos arquivos sincronizados |
+
+**Diferença `/upgrade-kit` vs `/update-kit`:**
+- `/upgrade-kit` → versiona o **harness** (templates físicos + libs) via `.harness/installed-version`
+- `/update-kit` → sincroniza **documentação metodológica** (`.md` de regras e padrões) sem tocar em código gerado
+
+---
+
 ## Contexto Mínimo por Agente (Token Efficiency)
 
 Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.

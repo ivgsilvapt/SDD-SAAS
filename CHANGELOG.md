@@ -6,6 +6,23 @@ Versionamento semântico: MAJOR.MINOR.PATCH — MINOR para novas features, PATCH
 
 ---
 
+## [2.0.1] — 2026-04-27
+
+### Corrigido
+- **`ORIENTACAO.md`** sincronizado para v2.0.0 (cabeçalho, contagem de agentes 6 → 12, fluxo de bootstrap)
+- **`Scripts/validate-kit.py`** ganhou Check 5 que valida estrutura completa de `harness/` (scripts, templates Docker/CI/env/git-hooks/github/devcontainer/vscode/.editorconfig, libs e versões em manifests)
+
+### Adicionado
+- **`README.md`** na raiz com quick-start orientado a `/bootstrap-saas` e árvore do repo
+- **`AGENTS.md`** ganhou seção "Harness Lifecycle (v2.0.0+)" mapeando `/bootstrap-saas`, `/upgrade-kit` e `/update-kit` com diferenciação clara entre upgrade-kit e update-kit
+- **`ORIENTACAO.md` Seção 4.0** descreve `/bootstrap-saas` como caminho recomendado para projetos novos em v2.0.0+
+
+### Alterado
+- **`Skills/init-sdd-saas.md`** marcada como fallback manual com disclaimer recomendando `/bootstrap-saas` em v2.0.0+
+- **Checklist da Fase A em `ORIENTACAO.md`** reorganizado para listar Opção 0 (`/bootstrap-saas`) antes da Opção A (`/init-sdd-saas`)
+
+---
+
 ## [2.0.0] — 2026-04-27
 
 ### Mudança Conceitual

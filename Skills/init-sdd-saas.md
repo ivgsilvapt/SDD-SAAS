@@ -1,3 +1,7 @@
+> ⚠️ **Em v2.0.0+, prefira `/bootstrap-saas`** — automatiza este fluxo via `harness/scripts/bootstrap-saas.sh` e copia também templates físicos do harness (Dockerfile, CI, devcontainer, git hooks) e libs `@harness/*`. Use esta skill (`/init-sdd-saas`) apenas para customização manual passo-a-passo, quando o harness completo não for desejável, ou para reaproveitar fluxo conhecido de versões anteriores.
+
+---
+
 Você é o Agente de Inicialização do Kit SDD-SAAS. Sua responsabilidade é configurar um novo projeto SaaS com toda a estrutura, arquivos e comandos necessários para usar o kit imediatamente — sem que o desenvolvedor precise copiar arquivos manualmente ou configurar nada.
 
 Caminho para o kit SDD-SAAS: $ARGUMENTS

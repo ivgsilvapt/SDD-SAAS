@@ -134,6 +134,84 @@ def check_version_consistency(kit: Path) -> tuple[int, int, list[str]]:
     return ok, checked, issues
 
 
+HARNESS_REQUIRED_PATHS = [
+    "harness/scripts/bootstrap-saas.sh",
+    "harness/scripts/upgrade-kit.sh",
+    "harness/scripts/setup.sh",
+    "harness/templates/docker/Dockerfile.node",
+    "harness/templates/docker/Dockerfile.python",
+    "harness/templates/docker/Dockerfile.go",
+    "harness/templates/docker/docker-compose.dev.yml",
+    "harness/templates/docker/docker-compose.test.yml",
+    "harness/templates/docker/.dockerignore",
+    "harness/templates/ci/github/ci.yml",
+    "harness/templates/ci/github/cd-staging.yml",
+    "harness/templates/ci/github/cd-prod.yml",
+    "harness/templates/ci/github/security.yml",
+    "harness/templates/ci/github/release.yml",
+    "harness/templates/ci/gitlab/.gitlab-ci.yml",
+    "harness/templates/env/.env.example",
+    "harness/templates/env/.env.test.example",
+    "harness/templates/.editorconfig",
+]
+
+HARNESS_REQUIRED_DIRS = [
+    "harness/templates/git-hooks",
+    "harness/templates/github",
+    "harness/templates/devcontainer",
+    "harness/templates/vscode",
+]
+
+HARNESS_LIB_MANIFESTS = [
+    ("harness/lib/test-helpers/node/package.json", "json"),
+    ("harness/lib/test-helpers/python/pyproject.toml", "toml"),
+    ("harness/lib/saas-core/node/package.json", "json"),
+    ("harness/lib/saas-core/python/pyproject.toml", "toml"),
+    ("harness/lib/observability/node/package.json", "json"),
+    ("harness/lib/observability/python/pyproject.toml", "toml"),
+]
+
+
+def check_harness_structure(kit: Path) -> tuple[int, int, list[str]]:
+    """Check 5: harness/ has all expected templates, libs and scripts (v2.0.0+)."""
+    issues = []
+
+    version_file = kit / "VERSION"
+    kit_version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else ""
+
+    checked = 0
+
+    for rel in HARNESS_REQUIRED_PATHS:
+        checked += 1
+        if not (kit / rel).exists():
+            issues.append(f"  -> {rel} esperado mas ausente")
+
+    for rel in HARNESS_REQUIRED_DIRS:
+        checked += 1
+        path = kit / rel
+        if not path.exists() or not path.is_dir() or not any(path.iterdir()):
+            issues.append(f"  -> {rel}/ esperado (diretorio nao-vazio) mas ausente ou vazio")
+
+    for rel, kind in HARNESS_LIB_MANIFESTS:
+        checked += 1
+        manifest = kit / rel
+        if not manifest.exists():
+            issues.append(f"  -> {rel} (manifest da lib) ausente")
+            continue
+        text = manifest.read_text(encoding="utf-8")
+        if kind == "json":
+            m = re.search(r'"version"\s*:\s*"([^"]+)"', text)
+        else:
+            m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+        if not m:
+            issues.append(f"  -> {rel} sem campo version")
+        elif kit_version and m.group(1) != kit_version:
+            issues.append(f"  -> {rel} version={m.group(1)} divergente de VERSION={kit_version}")
+
+    ok = checked - len(issues)
+    return ok, checked, issues
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Valida consistencia interna do SDD-SAAS Kit")
     parser.add_argument("--kit-path", default=".", help="Caminho para a raiz do kit (padrao: diretorio atual)")
@@ -156,6 +234,7 @@ def main() -> int:
         ("Check 2 - Arquivos de referencia do init-sdd-saas", check_init_skill_files),
         ("Check 3 - Referencias de arquivos do kit em ORIENTACAO.md", check_orientacao_references),
         ("Check 4 - Consistencia de versao (VERSION / ARCHITECTURE.md / ORIENTACAO.md)", check_version_consistency),
+        ("Check 5 - Estrutura do harness (templates, libs, scripts)", check_harness_structure),
     ]
 
     for label, fn in checks:

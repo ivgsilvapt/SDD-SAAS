@@ -3,9 +3,11 @@
 Guia completo do Kit de Arquitetura SaaS para desenvolvimento com IA (vibe coding).
 Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 
-> **Versão de referência deste arquivo:** `v1.3.0` — última sincronização completa com o kit
-> **Versão atual do kit:** `v1.4.0` — consulte `CHANGELOG.md` para ver o que mudou desde então
+> **Versão de referência deste arquivo:** `v2.0.0` — última sincronização completa com o kit
+> **Versão atual do kit:** `v2.0.1` — consulte `CHANGELOG.md` para ver o que mudou desde então
 > ⚠️ Atualize este bloco ao sincronizar este arquivo com uma nova versão do kit.
+>
+> **Mudança fundamental em v2.0.0:** o kit deixou de ser apenas um conjunto de arquivos de metodologia regenerados via LLM e passou a ser um **harness reutilizável**, com templates físicos versionados (`harness/templates/`), libs importáveis (`harness/lib/{test-helpers,saas-core,observability}`) e bootstrap automatizado (`/bootstrap-saas`). Veja Seção 4.0.
 
 ---
 
@@ -83,7 +85,7 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 
 ## 1. Apresentação — O que é este Kit
 
-Este kit é um conjunto de **6 arquivos de referência arquitetural** que funcionam como a "Constituição" de qualquer SaaS que você desenvolver com auxílio de IA. O objetivo é garantir que toda a IA (Claude Code, ChatGPT, Copilot, etc.) que você usar no projeto siga as mesmas regras de arquitetura, gere código consistente, e produza um software mantível e escalável — independente de quantas sessões de vibe coding você fizer.
+Este kit é um **harness reutilizável** para desenvolvimento de SaaS com IA: combina arquivos de metodologia (a "Constituição" arquitetural), templates físicos versionados (Dockerfiles, CI workflows, devcontainer, .editorconfig) e libs importáveis (`@harness/test-helpers`, `@harness/saas-core`, `@harness/observability` em Node.js e Python). O objetivo é garantir que toda a IA (Claude Code, ChatGPT, Copilot, etc.) que você usar no projeto siga as mesmas regras de arquitetura, gere código consistente, e produza um software mantível e escalável — independente de quantas sessões de vibe coding você fizer.
 
 ### Para quem é este kit
 
@@ -397,7 +399,7 @@ Você descreve a feature
 
 #### Exemplo: AçãoPlus — AGENTS.md
 
-Para o AçãoPlus, você usará todos os 6 agentes ao longo do desenvolvimento. O Agente Migration será acionado especialmente nos [SPRINTs](#sprint) 1 e 3, quando as tabelas `action_plans` e `tasks` forem criadas no banco.
+Para o AçãoPlus, você usará todos os 12 agentes ao longo do desenvolvimento (6 agentes do ciclo SPEC→Review + Discovery, DevOps, Security Audit, SRE, API Docs, Migration/Forensics). O Agente Migration será acionado especialmente nos [SPRINTs](#sprint) 1 e 3, quando as tabelas `action_plans` e `tasks` forem criadas no banco.
 
 ---
 
@@ -844,19 +846,62 @@ Evita a armadilha de implementar a feature mais fácil em vez da mais valiosa. C
 
 ## 4. Preparando um Novo Projeto SaaS
 
-Você tem duas opções para inicializar um novo projeto com o kit:
+A partir da v2.0.0 você tem **três opções** para inicializar um projeto com o kit:
 
-| | Opção A — Skill (recomendado) | Opção B — Manual (passo a passo) |
-|---|---|---|
-| **Como usar** | Um único comando `/init-sdd-saas` | Execute 5 passos em sequência |
-| **Pré-requisito** | Instalar a skill uma vez | Nenhum |
-| **Ideal para** | Projetos novos — setup em minutos | Aprendizado ou personalização durante o setup |
+| | Opção 0 — `/bootstrap-saas` (v2.0.0+, recomendado) | Opção A — `/init-sdd-saas` (fallback manual) | Opção B — Manual (passo a passo) |
+|---|---|---|---|
+| **Como usar** | `/bootstrap-saas [stack] [cloud] [profile]` | `/init-sdd-saas /caminho/para/o/kit` | Execute 5 passos em sequência |
+| **O que copia** | Templates físicos (Docker, CI, hooks, devcontainer) + libs `@harness/*` + metodologia | Apenas arquivos de metodologia | Você decide |
+| **Pré-requisito** | Skill `bootstrap-saas` instalada | Skill `init-sdd-saas` instalada | Nenhum |
+| **Ideal para** | Projetos novos em v2.0.0+ — bootstrap em ~30s | Customização passo-a-passo ou kits anteriores | Aprendizado profundo |
 
-> **Primeira vez usando o kit?** Siga a **Opção B** para entender o que cada passo faz. Nas próximas vezes, use a Opção A — ela faz tudo automaticamente.
+> **Primeira vez?** Use a **Opção 0** (`/bootstrap-saas`) — ela é idempotente, grava `.harness/installed-version` e prepara o projeto para `/upgrade-kit` futuro.
 
 ---
 
-### Opção A: Inicialização com a Skill `/init-sdd-saas`
+### Opção 0: Bootstrap automatizado com `/bootstrap-saas` (v2.0.0+)
+
+O comando `/bootstrap-saas` orquestra `harness/scripts/bootstrap-saas.sh`, que copia templates físicos do harness e substitui placeholders (`{{NODE_VERSION}}`, `{{APP_NAME}}`, `{{PORT}}` etc.) com os valores que você fornece interativamente.
+
+**Pré-requisito:** instalar a skill `bootstrap-saas`:
+
+```bash
+# Linux/macOS
+cp Skills/bootstrap-saas.md ~/.claude/skills/
+
+# Windows PowerShell
+Copy-Item Skills\bootstrap-saas.md "$env:USERPROFILE\.claude\skills\"
+```
+
+**Uso:** dentro de uma pasta vazia destinada ao novo projeto, abra o Claude Code e digite:
+
+```
+/bootstrap-saas node-nestjs aws balanced
+```
+
+A skill coletará interativamente: `PROJECT_NAME`, `BOUNDED_CONTEXTS`, parâmetros de banco. Em ~30 segundos você terá:
+
+- Estrutura `src/`, `specs/`, `migrations/`, `.claude/commands/`
+- `Dockerfile`, `docker-compose.dev.yml`, `.dockerignore`
+- `.github/workflows/{ci,cd-staging,cd-prod,security,release}.yml`
+- `.husky/`, `commitlint.config.js`, `lint-staged.config.js`
+- `.devcontainer/`, `.vscode/`, `.editorconfig`
+- `package.json` (Node) ou `pyproject.toml` (Python) com `@harness/*` libs declaradas
+- `CLAUDE.md`, `ARCHITECTURE.md`, `AGENTS.md`, `STATE.md`, `PROJECT.md` (metodologia)
+- `.harness/installed-version` (= versão atual do kit) para futuros `/upgrade-kit`
+- `git init` + primeiro commit Conventional Commits
+
+Depois, rode `bash harness/scripts/setup.sh` (sobe Docker, espera Postgres, roda migrations + seed) e abra o projeto.
+
+> **Já tenho um projeto antigo no kit?** Use `/upgrade-kit [versão-alvo]` em vez de `/bootstrap-saas`. Veja Seção 4.A no AGENTS.md.
+
+---
+
+---
+
+### Opção A: Inicialização com a Skill `/init-sdd-saas` (fallback manual)
+
+> ⚠️ **Em v2.0.0+, prefira `/bootstrap-saas` (Opção 0)** — ela copia também templates físicos e libs do harness, não apenas arquivos de metodologia. Use `/init-sdd-saas` quando precisar de customização passo-a-passo, quando o harness completo não for desejável, ou para reaproveitar fluxo conhecido de versões anteriores.
 
 A skill `/init-sdd-saas` cria toda a estrutura do projeto, copia os arquivos do kit, configura os slash commands e gera `CLAUDE.md`, `STATE.md` e `PROJECT.md` com os dados do seu projeto — em uma única conversa com o Claude Code.
 
@@ -2463,9 +2508,13 @@ Use este checklist para acompanhar o progresso do seu projeto. Cada item tem um 
 
 ### Fase A: Preparação do Ambiente (faça uma vez por projeto)
 
-**Opção A — Com a skill (recomendado):**
+**Opção 0 — Bootstrap automatizado (v2.0.0+, recomendado):**
+- [ ] **Skill `bootstrap-saas` instalada (uma vez por máquina):** `Skills/bootstrap-saas.md` copiado para `~/.claude/skills/`
+- [ ] **Skill `arch-guide` instalada (uma vez por máquina):** `Skills/arch-guide/` copiado para `~/.claude/skills/` conforme [Seção 7.5](#75-skill-arch-guide--clean-architecture--ddd-global)
+- [ ] **Projeto bootstrapado:** dentro da pasta vazia, execute `/bootstrap-saas [stack] [cloud] [profile]` — responda nome, bounded contexts e parâmetros de banco. O harness copia templates físicos, libs `@harness/*` e grava `.harness/installed-version`
+
+**Opção A — `/init-sdd-saas` (fallback manual, sem templates físicos):**
 - [ ] **Skill instalada (uma vez por máquina):** `Skills/init-sdd-saas.md` copiado para `~/.claude/commands/` conforme [Opção A da Seção 4](#opção-a-inicialização-com-a-skill-init-sdd-saas)
-- [ ] **Skill arch-guide instalada (uma vez por máquina):** `Skills/arch-guide/` copiado para `~/.claude/skills/` conforme [Seção 7.5](#75-skill-arch-guide--clean-architecture--ddd-global)
 - [ ] **Projeto inicializado:** Execute `/init-sdd-saas /caminho/para/o/kit` no Claude Code dentro da pasta do novo projeto — responda as perguntas sobre nome, stack e bounded contexts
 
 **Opção B — Manual (passo a passo):**
