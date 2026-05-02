@@ -3,8 +3,8 @@
 Guia completo do Kit de Arquitetura SaaS para desenvolvimento com IA (vibe coding).
 Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 
-> **Versão de referência deste arquivo:** `v2.0.0` — última sincronização completa com o kit
-> **Versão atual do kit:** `v2.0.1` — consulte `CHANGELOG.md` para ver o que mudou desde então
+> **Versão de referência deste arquivo:** `v2.1.0` — última sincronização completa com o kit
+> **Versão atual do kit:** `v2.1.0` — consulte `CHANGELOG.md` para ver o que mudou desde então
 > ⚠️ Atualize este bloco ao sincronizar este arquivo com uma nova versão do kit.
 >
 > **Mudança fundamental em v2.0.0:** o kit deixou de ser apenas um conjunto de arquivos de metodologia regenerados via LLM e passou a ser um **harness reutilizável**, com templates físicos versionados (`harness/templates/`), libs importáveis (`harness/lib/{test-helpers,saas-core,observability}`) e bootstrap automatizado (`/bootstrap-saas`). Veja Seção 4.0.
@@ -25,6 +25,7 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
    - [2.4 Domain-First](#24-domain-first)
    - [2.5 TDD — Test-Driven Development](#25-tdd--test-driven-development)
    - [2.6 Vibe Coding com IA](#26-vibe-coding-com-ia)
+   - [2.7 Context7 — Documentação Sempre Atualizada (Skill por default, MCP opt-in)](#27-context7--documentação-sempre-atualizada-skill-por-default-mcp-opt-in)
 3. [Os Arquivos do Kit — o que é cada um e quando usar](#3-os-arquivos-do-kit)
    - [3.1 ARCHITECTURE.md — A Constituição](#31-architecturemd--a-constituição)
    - [3.2 AGENTS.md — Os 6 Agentes do Fluxo](#32-agentsmd--os-6-agentes-do-fluxo)
@@ -270,6 +271,32 @@ Você aprova e avança para a próxima feature
 ```
 
 O kit garante que a IA siga as mesmas regras arquiteturais em todas as sessões, mesmo que você mude de sessão, mude de IA, ou retome o projeto semanas depois.
+
+---
+
+### 2.7 Context7 — Documentação Sempre Atualizada (Skill por default, MCP opt-in)
+
+**O que é:** [Context7](https://github.com/upstash/context7) (mantido pela Upstash) é uma fonte de **documentação versionada e atualizada** de bibliotecas open-source, exposta tanto via Skill quanto via servidor MCP (Model Context Protocol — padrão aberto da Anthropic para conectar agentes a fontes externas).
+
+**Qual problema resolve:** modelos LLM têm cutoff de treinamento — ao codar contra NestJS v11, Pydantic v2, Prisma v6 ou Next.js App Router (versões mais novas que o cutoff), a IA pode alucinar APIs antigas. Context7 elimina esse risco buscando docs reais sob demanda.
+
+**Modo Skill (default — instalado pelo `/bootstrap-saas`):**
+- Arquivo `.claude/skills/context7.md` é copiado automaticamente pelo bootstrap.
+- A Skill é **lazy-loaded**: o Claude Code só a carrega quando ela é invocada (descoberta por nome+descrição), portanto o custo em tokens é zero quando você não está usando docs externas.
+- **Como ativar:** inclua `use context7` no prompt antes de codar contra a lib externa. Exemplo: *"Implemente um interceptor de NestJS que loga latência. use context7"*.
+
+**Modo MCP (opt-in — para uso intensivo):**
+- Para projetos onde Context7 é consultado em quase todo SPRINT, copie `harness/templates/mcp/.mcp.json` para a raiz do projeto.
+- Trade-off: o servidor MCP fica **always-on** (você não precisa pedir "use context7" toda hora), mas o schema do tool é injetado em **todo system prompt**, gastando tokens em turnos que nem usam docs.
+- Configuração default usa modo **stdio** via `npx -y @upstash/context7-mcp` — sem necessidade de API key. Para HTTP + rate limit maior, edite o `.mcp.json` para apontar para `https://mcp.context7.com/mcp` e exporte `CONTEXT7_API_KEY` (obtido em https://context7.com/dashboard).
+
+**Quando NÃO usar Context7:**
+- Padrões internos do projeto → consulte `ARCHITECTURE.md` / `SAAS_PATTERNS.md`.
+- Decisões já registradas → consulte `STATE.md` / `KNOWLEDGE.md`.
+- Código próprio → leia `src/` direto.
+- Libs estáveis e bem conhecidas (lodash, dayjs, datetime nativo) — economize tokens.
+
+**Agentes que mais se beneficiam:** Implementation, Testing, DevOps, Security Audit, API Docs, SRE e Migration (todos lidam com APIs externas a cada SPRINT).
 
 ---
 
@@ -888,6 +915,7 @@ A skill coletará interativamente: `PROJECT_NAME`, `BOUNDED_CONTEXTS`, parâmetr
 - `.devcontainer/`, `.vscode/`, `.editorconfig`
 - `package.json` (Node) ou `pyproject.toml` (Python) com `@harness/*` libs declaradas
 - `CLAUDE.md`, `ARCHITECTURE.md`, `AGENTS.md`, `STATE.md`, `PROJECT.md` (metodologia)
+- `.claude/skills/context7.md` (Skill lazy-loaded para docs de libs externas — ver §2.7)
 - `.harness/installed-version` (= versão atual do kit) para futuros `/upgrade-kit`
 - `git init` + primeiro commit Conventional Commits
 

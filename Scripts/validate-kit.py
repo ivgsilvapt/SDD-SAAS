@@ -153,6 +153,8 @@ HARNESS_REQUIRED_PATHS = [
     "harness/templates/env/.env.example",
     "harness/templates/env/.env.test.example",
     "harness/templates/.editorconfig",
+    "harness/templates/mcp/.mcp.json",
+    "Skills/context7.md",
 ]
 
 HARNESS_REQUIRED_DIRS = [

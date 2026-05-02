@@ -4,6 +4,10 @@
 # Idempotente: detecta estado existente e pula passos já concluídos.
 # Uso: bash harness/scripts/bootstrap-saas.sh [stack] [cloud] [profile] [project_name]
 # Exemplo: bash bootstrap-saas.sh node-nestjs aws balanced acaoplus
+#
+# Fluxo: 11 passos. O Passo 8 instala a Skill Context7 (lazy-loaded) em
+# .claude/skills/context7.md. O modo MCP (always-on) é opt-in: copie
+# harness/templates/mcp/.mcp.json para a raiz do projeto. Ver ORIENTACAO §2.7.
 
 set -euo pipefail
 
@@ -63,7 +67,7 @@ echo "════════════════════════�
 echo ""
 
 # ── Passo 1: Estrutura de pastas ──────────────────────────────────────────────
-step "1/10 — Estrutura de pastas"
+step "1/11 — Estrutura de pastas"
 dirs=(src tests specs .claude docs)
 for d in "${dirs[@]}"; do
   if [[ ! -d "${TARGET_DIR}/${d}" ]]; then
@@ -76,7 +80,7 @@ done
 mkdir -p "${TARGET_DIR}/.harness"
 
 # ── Passo 2: Copiar templates físicos ─────────────────────────────────────────
-step "2/10 — Templates físicos"
+step "2/11 — Templates físicos"
 
 # Selecionar Dockerfile por stack
 case "${STACK}" in
@@ -125,7 +129,7 @@ done
 copy_template "${TEMPLATES_DIR}/.editorconfig" "${TARGET_DIR}/.editorconfig"
 
 # ── Passo 3: Substituir placeholders ──────────────────────────────────────────
-step "3/10 — Substituição de placeholders"
+step "3/11 — Substituição de placeholders"
 
 NODE_VERSION="20"
 PYTHON_VERSION="3.12"
@@ -153,7 +157,7 @@ done
 ok "Placeholders substituídos"
 
 # ── Passo 4: Copiar arquivos de metodologia do kit ────────────────────────────
-step "4/10 — Arquivos de metodologia"
+step "4/11 — Arquivos de metodologia"
 kit_files=(
   ARCHITECTURE.md AGENTS.md SPEC_TEMPLATE.md TESTING_GUIDE.md
   SAAS_PATTERNS.md GIT_WORKFLOW.md GLOSSARY_TEMPLATE.md
@@ -168,7 +172,7 @@ done
 copy_template "${KIT_ROOT}/Slash Commands/CLAUDE.md" "${TARGET_DIR}/CLAUDE.md"
 
 # ── Passo 5: Git init ─────────────────────────────────────────────────────────
-step "5/10 — Git"
+step "5/11 — Git"
 if [[ ! -d "${TARGET_DIR}/.git" ]]; then
   git -C "${TARGET_DIR}" init
   git -C "${TARGET_DIR}" checkout -b main 2>/dev/null || true
@@ -200,7 +204,7 @@ GITIGNORE
 fi
 
 # ── Passo 6: Branch protection (requer gh CLI) ────────────────────────────────
-step "6/10 — Branch protection"
+step "6/11 — Branch protection"
 if command -v gh &>/dev/null; then
   REMOTE_URL="$(git -C "${TARGET_DIR}" remote get-url origin 2>/dev/null || echo '')"
   if [[ -n "${REMOTE_URL}" ]]; then
@@ -215,7 +219,7 @@ else
 fi
 
 # ── Passo 7: Git hooks (Husky para Node, pre-commit para Python) ──────────────
-step "7/10 — Git hooks"
+step "7/11 — Git hooks"
 case "${STACK}" in
   node-*)
     if [[ -f "${TARGET_DIR}/package.json" ]]; then
@@ -237,8 +241,15 @@ case "${STACK}" in
     fi ;;
 esac
 
-# ── Passo 8: Instalar dependências ────────────────────────────────────────────
-step "8/10 — Instalação de dependências"
+# ── Passo 8: Instalar Skill Context7 (project-scoped, lazy-loaded) ────────────
+step "8/11 — Skill Context7"
+mkdir -p "${TARGET_DIR}/.claude/skills"
+copy_template "${KIT_ROOT}/Skills/context7.md" "${TARGET_DIR}/.claude/skills/context7.md"
+ok "Skill Context7 instalada em .claude/skills/context7.md"
+warn "Para MCP always-on (opt-in), copie ${TEMPLATES_DIR}/mcp/.mcp.json — ver ORIENTACAO §2.7"
+
+# ── Passo 9: Instalar dependências ────────────────────────────────────────────
+step "9/11 — Instalação de dependências"
 case "${STACK}" in
   node-*)
     if [[ -f "${TARGET_DIR}/package.json" ]]; then
@@ -256,15 +267,15 @@ case "${STACK}" in
     fi ;;
 esac
 
-# ── Passo 9: Setup (Docker dev) ───────────────────────────────────────────────
-step "9/10 — Setup do ambiente"
+# ── Passo 10: Setup (Docker dev) ──────────────────────────────────────────────
+step "10/11 — Setup do ambiente"
 if [[ -f "${KIT_ROOT}/harness/scripts/setup.sh" ]]; then
   warn "Para subir o ambiente Docker, execute:"
   warn "  bash ${KIT_ROOT}/harness/scripts/setup.sh"
 fi
 
-# ── Passo 10: Gravar versão instalada + primeiro commit ───────────────────────
-step "10/10 — Versão instalada e primeiro commit"
+# ── Passo 11: Gravar versão instalada + primeiro commit ───────────────────────
+step "11/11 — Versão instalada e primeiro commit"
 echo "${KIT_VERSION}" > "${TARGET_DIR}/.harness/installed-version"
 echo "${STACK}" > "${TARGET_DIR}/.harness/stack"
 echo "${CLOUD}" > "${TARGET_DIR}/.harness/cloud"

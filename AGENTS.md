@@ -105,6 +105,18 @@ Comandos que gerenciam o ciclo de vida do **harness** instalado no projeto desti
 
 ---
 
+## Skill Recomendada: Context7 (docs de libs externas sempre atualizadas)
+
+Os agentes **Implementation, Testing, DevOps, Security Audit, API Docs, SRE e Migration** podem invocar a Skill **`context7`** (instalada em `.claude/skills/context7.md` pelo `/bootstrap-saas`) para obter documentação **versionada e atualizada** de bibliotecas externas — eliminando o risco de gerar código contra APIs antigas (cutoff de treinamento).
+
+**Como ativar:** inclua `use context7` no prompt do agente, ou peça explicitamente "consulte Context7 para X". A Skill é lazy-loaded — só consome tokens quando invocada.
+
+**Modo MCP (opt-in, always-on):** para projetos com uso intensivo, copie `harness/templates/mcp/.mcp.json` para a raiz do projeto-alvo. Trade-off: maior conveniência ↔ maior custo de tokens em todo system prompt. Ver `ORIENTACAO.md` §2.7.
+
+**Quando NÃO usar:** padrões internos do projeto (consulte `ARCHITECTURE.md` / `SAAS_PATTERNS.md`), decisões registradas (consulte `STATE.md` / `KNOWLEDGE.md`), código próprio (leia `src/` direto).
+
+---
+
 ## Contexto Mínimo por Agente (Token Efficiency)
 
 Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.

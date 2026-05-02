@@ -1,6 +1,6 @@
 {
   "name": "@harness/saas-core",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Primitivas multi-tenant reutilizáveis: TenantId, TenantAwareEntity, TenantContext, TenantAwareRepository, tenant middleware",
   "main": "index.js",
   "types": "index.d.ts",

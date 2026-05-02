@@ -6,6 +6,22 @@ Versionamento semântico: MAJOR.MINOR.PATCH — MINOR para novas features, PATCH
 
 ---
 
+## [2.1.0] — 2026-05-02
+
+### Adicionado
+- **`Skills/context7.md`** — Skill canônica (com frontmatter `name`/`description`/`version`) para Context7 (Upstash). Lazy-loaded → só consome tokens quando invocada. Documenta os 3 modos de uso (prompt, CLI on-demand, MCP opt-in) e quando NÃO usar.
+- **`harness/templates/mcp/.mcp.json`** — template **opt-in** para Context7 via MCP em modo stdio (sem necessidade de API key). Não é copiado automaticamente pelo bootstrap; usuários intensivos copiam manualmente para a raiz do projeto.
+- **Passo 8/11 em `harness/scripts/bootstrap-saas.sh`** — instala a Skill Context7 em `.claude/skills/context7.md` do projeto-alvo. Passos seguintes renumerados (8→9, 9→10, 10→11); cabeçalho do script documenta o fluxo.
+- **Seção "Skill Recomendada: Context7" em `AGENTS.md`** — lista os 7 agentes que mais se beneficiam (Implementation, Testing, DevOps, Security Audit, API Docs, SRE, Migration) e diferencia Skill (default) vs MCP (opt-in).
+- **`README.md`** ganhou seções **"Frameworks e Metodologias Absorvidos"** (12 itens em formato tabela) e **"Princípios de Arquitetura Observados"** (agrupados em 7 categorias didáticas).
+- **`ORIENTACAO.md` §2.7** — Context7 como pilar de "documentação sempre atualizada"; explica trade-off Skill (lazy-loaded) vs MCP (always-on, custa tokens em todo system prompt) e modo HTTP+API key opcional para rate limit maior.
+
+### Alterado
+- **`Scripts/validate-kit.py`** — Check 5 valida `harness/templates/mcp/.mcp.json` e `Skills/context7.md` na lista `HARNESS_REQUIRED_PATHS`.
+- **Bumps de versão** — VERSION (2.0.1 → 2.1.0), ARCHITECTURE.md, ORIENTACAO.md e os 6 manifests de libs (`@harness/test-helpers`, `@harness/saas-core`, `@harness/observability` em Node + Python) sincronizados em 2.1.0.
+
+---
+
 ## [2.0.1] — 2026-04-27
 
 ### Corrigido
