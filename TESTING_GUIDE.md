@@ -3,6 +3,8 @@
 Guia de estratégia de testes para projetos com Clean Architecture + DDD + SaaS.
 Complementa `ARCHITECTURE.md` (seções 14 e 5).
 
+> **Este é o documento completo, para leitura humana.** Para contexto de sessão de agente, use a skill `testing-guide` (`Skills/testing-guide/SKILL.md`) — carrega só a camada necessária (unit-domain, integration-infra, e2e ou helpers) em vez do arquivo inteiro.
+
 ---
 
 ## Usando @harness/test-helpers (harness v2.0+)

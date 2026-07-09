@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "harness-saas-core"
-version = "2.1.0"
+version = "2.2.0"
 description = "Primitivas multi-tenant: TenantId, TenantAwareEntity, TenantContext, TenantAwareRepository, tenant middleware"
 requires-python = ">=3.11"
 dependencies = []

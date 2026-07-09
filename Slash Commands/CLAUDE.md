@@ -12,15 +12,24 @@ Leia ARCHITECTURE.md antes de qualquer ação. Este projeto segue Clean Architec
 - Ao tomar decisão arquitetural não-óbvia, registre em STATE.md antes de fechar a sessão
 
 ## Contexto automático — leia estes arquivos antes de qualquer ação
-@ARCHITECTURE.md — Constituição do projeto (obrigatório em toda sessão)
+@ARCHITECTURE_DIGEST.md — Regras inegociáveis do projeto, resumo de sessão (obrigatório em toda sessão)
 @STATE.md — Memória persistente: decisões, bloqueios, ideias adiadas (obrigatório em toda sessão)
 @specs/[dominio-principal]/GLOSSARY.md — Vocabulário do domínio (substitua [dominio-principal] pelo seu bounded context)
-@PROJECT.md — Visão e propósito do produto (opcional, recomendado para o Agente Spec)
-@KNOWLEDGE.md — Lições acumuladas de sessões anteriores (opcional — se existir, leia antes de implementar)
-@GIT_WORKFLOW.md — Estratégia de branches por SPEC (leia uma vez no início do projeto, não é necessário em toda sessão)
 
 Quando acionar um agente via slash command, consulte AGENTS.md para o contexto mínimo
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
+Quando precisar de detalhe além do digest (ex: Analyze e Review), leia diretamente as
+seções do ARCHITECTURE.md completo indicadas em AGENTS.md — nunca inclua o arquivo inteiro
+só porque o digest não bastou.
+
+## Contexto sob demanda — leia apenas quando a regra abaixo se aplicar
+
+Estes arquivos **não** usam `@` — incluí-los sempre desperdiçaria tokens em sessões que não precisam deles. Leia-os explicitamente quando a situação pedir:
+
+- `PROJECT.md` — Agente Spec: leia antes de criar um SPEC novo (visão de produto, personas, non-goals).
+- `KNOWLEDGE.md` — Qualquer agente: leia antes de implementar em área com problema já registrado (se o arquivo existir).
+- `GIT_WORKFLOW.md` — Leia uma vez, no início do projeto, para adotar a estratégia de branches por SPEC. Não é necessário em toda sessão.
+- `ARCHITECTURE.md` (completo) — Agente Analyze e Agente Review: sempre leem as seções completas listadas em `AGENTS.md`, nunca o digest.
 
 ## Comandos disponíveis
 
@@ -29,12 +38,17 @@ daquele agente e inclua apenas os arquivos necessários — não inclua o kit in
 
 ### Ciclo SPEC → Review
 - /new-spec [descrição da feature] — cria novo SPEC via Agente Spec
+- /enrich-spec [spec] — adiciona casos de borda e estados transversais via Agente Spec Enricher (opcional, sessão nova, antes do Analyze)
 - /review-arch [spec] analyze — valida consistência do SPEC via Agente Analyze
 - /impl-sprint [spec] [n] — implementa SPRINT N via Agente Implementation
 - /test-sprint [spec] [n] — gera testes do SPRINT N via Agente Testing
 - /review-arch [spec] [n] — revisa código do SPRINT N via Agente Review
 - /migrate-sprint [spec] [n] — gera migration SQL do SPRINT N via Agente Migration
 - /forensics-sprint [spec] [n] — diagnóstico de SPRINT com falha (Review REPROVADO ou testes persistentes)
+
+### Design Visual (opcional — produtos novos ou features com UI)
+- /design-ui [spec] — gera briefing de design via Agente Design a partir do PROJECT.md/SPEC
+- /lock-design [pasta-do-design] — valida as 13 regras e trava o design via Agente Design Lock
 
 ### Pós-Review / Produção
 - /init-devops [cloud] — configura CI/CD, Dockerfile e .env.example via Agente DevOps

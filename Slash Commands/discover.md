@@ -39,6 +39,8 @@ Regras:
 - Não sugira criar SPECs antes do veredicto PROBLEMA VALIDADO
 - Se o problema for vago, faça perguntas de clarificação antes de preencher o DISCOVERY
 
-Salve o resultado em DISCOVERY.md usando o DISCOVERY_TEMPLATE.md como estrutura.
+Salve o resultado em DISCOVERY.md usando o DISCOVERY_TEMPLATE.md como estrutura, com **Status:** atualizado para o veredicto emitido (use exatamente um dos valores listados no DISCOVERY_TEMPLATE.md: `problema validado`, `requer mais pesquisa` ou `pivotar`).
+
+8. Se o veredicto for **PROBLEMA VALIDADO**: ofereça ao desenvolvedor pré-preencher o `PROJECT_TEMPLATE.md` (visão, personas, non-goals) a partir das conclusões deste DISCOVERY.md, evitando transcrição manual redundante. Só grave em `PROJECT.md` se o desenvolvedor confirmar.
 
 Siga as diretrizes do Agente Discovery definidas em AGENTS.md.

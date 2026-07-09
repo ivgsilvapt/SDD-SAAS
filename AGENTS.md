@@ -119,7 +119,9 @@ Os agentes **Implementation, Testing, DevOps, Security Audit, API Docs, SRE e Mi
 
 ## Contexto Mínimo por Agente (Token Efficiency)
 
-Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
+Forneça **apenas** o contexto listado — não inclua arquivos desnecessários. Esta é a tabela canônica do kit — não a duplique em outros documentos; `ARCHITECTURE.md` e `ORIENTACAO.md` apontam para cá.
+
+> **Nota sobre `ARCHITECTURE_DIGEST.md`:** a coluna "Contexto obrigatório" abaixo referencia seções específicas de `ARCHITECTURE.md` (ex: "seções 0–3", "seções 1 e 5") — isso significa ler o arquivo completo nessas seções, não o digest. O `ARCHITECTURE_DIGEST.md` substitui `@ARCHITECTURE.md` apenas no carregamento automático via CLAUDE.md; **Analyze** e **Review** sempre leem as seções completas indicadas aqui, nunca o digest.
 
 | Agente | Contexto obrigatório | Contexto opcional |
 |---|---|---|
@@ -138,6 +140,9 @@ Forneça **apenas** o contexto listado — não inclua arquivos desnecessários.
 | **SRE** | SPEC da feature + `SAAS_PATTERNS.md` | Configuração de infraestrutura (Prometheus, Grafana, CloudWatch) |
 | **API Docs** | Controllers + Command Objects + ViewModels relevantes | SPECs das rotas documentadas |
 | **Retrospectiva** | `STATE.md` + `KNOWLEDGE.md` + lista de commits do milestone | `ROADMAP.md` para alinhar lições com próximas features |
+| **Design** | `PROJECT.md` (Identidade Visual) + SPEC(s) (Impacto em UX) + `DESIGN_CONTRACT_SCHEMA.md` | `TRACEABILITY_GUIDE.md` |
+| **Design Lock** | `artifact.html` + `design-contract.json` + `DESIGN_LOCK_CHECKLIST.md` | SPEC(s) de origem para conferir cobertura de US |
+| **Spec Enricher** | SPEC completo (contexto limpo, sessão nova) | — |
 | **Qualquer agente (retomada)** | Se `HANDOFF.md` existir na raiz, leia-o antes de agir — representa o estado exato da sessão anterior | — |
 
 ---
@@ -187,6 +192,9 @@ Use este guia para otimizar custo sem sacrificar qualidade onde importa.
 | **Security Audit** | Melhor disponível | Intermediário | Threat modeling e detecção de vulnerabilidades exigem raciocínio adversarial |
 | **SRE** | Leve ou intermediário | Qualquer | Derivação de SLOs e runbooks a partir de padrões conhecidos |
 | **API Docs** | Leve ou intermediário | Leve | Leitura de código + geração de schema — tarefa determinística |
+| **Design** | Leve ou intermediário | Qualquer | Geração de briefing a partir de template estruturado |
+| **Design Lock** | Leve ou intermediário | Leve | Validação determinística de integridade referencial — as regras 1–6/8/9/11/12 são checáveis por script |
+| **Spec Enricher** | **≥ Agente Spec** | **≥ Agente Spec** | Validador de robustez — mesma regra de Multi-Model Routing do Analyze/Review |
 
 > **Regra crítica (Conflito 4 — ver ARCHITECTURE.md seção 17):** Analyze e Review **nunca** usam modelo inferior ao usado em Implementation na mesma sessão. Um Review mais fraco que o Implementation é um falso positivo estrutural — aprova código que o gerador teria rejeitado.
 >
@@ -361,6 +369,8 @@ Anti-patterns a evitar:
 
 Salve o SPEC em: specs/[dominio]/[verbo]-[substantivo].md
 ```
+
+**Quando existir `design-contract.json` travado (`design-manifest.json` com `locked: true`) para o produto/domínio:** o SPEC desta feature deve (a) citar os IDs de US/FR que implementa; (b) referenciar, na seção "Impacto em UX", as telas e `apiExpectations` do contract relacionadas; (c) preencher a tabela de rastreabilidade `US | FR | Tela | Ação | API | Tabela` (ver `TRACEABILITY_GUIDE.md` e a seção "Impacto em UX" do `SPEC_TEMPLATE.md`).
 
 ### Limites de Escopo — Agente Spec
 
@@ -602,6 +612,7 @@ Valida o código **e** os testes gerados pelo Agente Implementation e Agente Tes
 - Testes do SPRINT (arquivos de teste)
 - SPEC original (SPRINT correspondente + cenários GWT dos FRs implementados)
 - `ARCHITECTURE.md` (seções 1 e 5)
+- **Se existir `design-manifest.json` com `locked: true` para este SPEC:** o `design-contract.json` e o `artifact.html` travados
 
 ### Saída esperada
 - Relatório de violações por severidade
@@ -686,6 +697,8 @@ Reviewed-By: Agente Review
 ```
 Escolha o type conforme ARCHITECTURE.md seção 20 (feat para SPRINT novo, test se foi apenas testes, refactor se foi ciclo de melhoria).
 ```
+
+**Fidelidade ao design travado (quando aplicável):** se a sprint tocar Presentation e existir `design-manifest.json` com `locked: true`, o Review inclui uma verificação adicional: os componentes usados correspondem aos `affectedComponentIds` do `design-contract.json`; os tokens de cor/tipografia correspondem ao contract; nenhuma tela nova fora do contract foi criada sem um `delta` registrado. Trate desvio não registrado como violação de boas práticas (ou crítica, se alterar comportamento de segurança/tenant).
 
 ### Limites de Escopo — Agente Review
 
@@ -1090,6 +1103,7 @@ Ao fechar um milestone — após todos os SPRINTs serem aprovados e a feature es
 - SPECs que foram reprovados e causa raiz
 - Padrões de bug pós-release
 - Entradas novas para `KNOWLEDGE.md`
+- Proposta de poda/arquivamento de `STATE.md`/`KNOWLEDGE.md` para `STATE_ARCHIVE.md`/`KNOWLEDGE_ARCHIVE.md` quando o STATE.md ativo ultrapassar ~150 linhas (aprovação do desenvolvedor item a item — nunca automática)
 
 ### Prompt
 
@@ -1124,8 +1138,114 @@ Atualize o KNOWLEDGE.md com as novas entradas ao final.
 
 ### Limites de Escopo — Agente Retrospectiva
 
-**PODE:** ler STATE.md, KNOWLEDGE.md e git log; atualizar KNOWLEDGE.md com novas lições.
-**NÃO PODE:** modificar código de produção ou SPECs. Não pode marcar tarefas como concluídas no ROADMAP.
+**PODE:** ler STATE.md, KNOWLEDGE.md e git log; atualizar KNOWLEDGE.md com novas lições; propor e (com aprovação item a item) mover entradas para STATE_ARCHIVE.md/KNOWLEDGE_ARCHIVE.md.
+**NÃO PODE:** modificar código de produção ou SPECs. Não pode marcar tarefas como concluídas no ROADMAP. Não pode apagar uma entrada de KNOWLEDGE.md — apenas movê-la para o archive.
+
+---
+
+## Agente 13 — Design
+
+### Papel
+Gera o `DESIGN_BRIEFING.md` (entrada para a ferramenta de design visual) a partir do `PROJECT.md` (seção Identidade Visual) e das SPECs relevantes (seção "Impacto em UX"), e — após a geração externa do `artifact.html` + `design-contract.json` — produz um `DESIGN_BRIEF.md` legível resumindo o que foi gerado.
+
+### Quando acionar
+Quando uma feature ou produto novo exige formalização de UI além do texto livre da seção "Impacto em UX" do SPEC — tipicamente produtos novos ou features com múltiplas telas.
+
+### Entrada obrigatória
+- `PROJECT.md` (seção Identidade Visual) — cores hex, fonte, plataforma
+- SPEC(s) relevantes — seção "Impacto em UX" e User Stories com "Padrão de interface exigido" quando descrito
+- `TRACEABILITY_GUIDE.md` — convenções de ID
+- `DESIGN_CONTRACT_SCHEMA.md` — schema de saída
+
+### Saída esperada
+- `DESIGN_BRIEFING.md`: objetivo do design, plataforma/formato, identidade visual em hex, telas exigidas (derivadas das US relevantes, citando os IDs de US que as justificam), referências visuais, restrições, saídas esperadas.
+- Após a geração externa: `DESIGN_BRIEF.md` (resumo legível do `artifact.html` + `design-contract.json` gerados).
+
+### Integração com ferramenta externa de design (Open Design)
+
+1. `git clone https://github.com/nexu-io/open-design.git`
+2. `pnpm install && pnpm tools-dev run web`
+3. A ferramenta detecta CLIs de coding agent no PATH (Claude Code, Gemini CLI, etc.) para usar como engine, ou usa proxy BYOK
+4. Alimente o `DESIGN_BRIEFING.md` como entrada
+5. Salve `artifact.html` e `design-contract.json` na pasta de design do projeto (ex: `design/[feature]/`)
+
+Se a ferramenta externa não estiver disponível, o `design-contract.json` pode ser preenchido manualmente seguindo `DESIGN_CONTRACT_SCHEMA.md` — o Design Lock valida da mesma forma, independentemente da origem.
+
+### Regra de Cobertura
+Toda User Story com "Padrão de interface exigido" precisa aparecer em ≥1 tela (gap zero). Desvios viram um `delta` no `design-contract.json`, nunca uma omissão silenciosa.
+
+### Limites de Escopo — Agente Design
+
+**PODE:** ler PROJECT.md/SPECs, gerar DESIGN_BRIEFING.md e DESIGN_BRIEF.md, orientar o uso da ferramenta externa.
+**NÃO PODE:** travar o design (isso é exclusivo do Agente Design Lock); decidir sozinho sobre deltas com `requiresRequirementsChange: true` — sempre sinaliza ao desenvolvedor.
+
+---
+
+## Agente 14 — Design Lock
+
+### Papel
+Validador determinístico do `design-contract.json` + `artifact.html` gerados pelo Agente Design. Aplica as 13 regras de `DESIGN_LOCK_CHECKLIST.md` — todas devem ser PASS para travar o design.
+
+### Quando acionar
+Após o Agente Design produzir `artifact.html` + `design-contract.json`, antes de qualquer SPRINT que implemente a camada Presentation dessas telas.
+
+### Disciplina de Validação
+Contexto limpo não é obrigatório aqui (é um validador determinístico, não um crítico de conteúdo), mas as regras 1–6, 8, 9, 11 e 12 **devem** ser conferidas via `Scripts/validate-design-lock.py` — nunca só por leitura humana/LLM, para eliminar falso-positivo. As regras 7, 10 e 13 exigem julgamento e ficam com este agente.
+
+### Entrada obrigatória
+- `artifact.html` e `design-contract.json` gerados
+- SPEC(s) de origem (para conferir User Stories cobertas)
+- `PROJECT.md` (seção Identidade Visual, para a regra 7)
+- `DESIGN_LOCK_CHECKLIST.md`
+
+### Saída esperada
+- `DESIGN_LOCK_REPORT.md`: Status `APROVADO`/`REPROVADO` + tabela PASS/FAIL das 13 regras +, para cada falha, a regra, o ID afetado e a ação de correção.
+- Se `APROVADO`: `design-manifest.json` com `locked: true`, `lockedAt` (ISO-8601) e hashes `htmlSha256` / `contractSha256` (`sha256sum` no Linux/Mac, `certutil -hashfile <arquivo> SHA256` no Windows).
+
+### Regras
+- Resultado binário por regra — nunca trave com uma regra pendente.
+- REPROVADO volta ao Agente Design — o Design Lock nunca corrige o contract diretamente.
+- Após travado, qualquer mudança no `artifact.html` ou `design-contract.json` invalida o manifest (o hash não bate mais) — é necessário rodar `/lock-design` novamente.
+
+### Limites de Escopo — Agente Design Lock
+
+**PODE:** ler e validar `design-contract.json`/`artifact.html`; gerar `DESIGN_LOCK_REPORT.md` e `design-manifest.json`.
+**NÃO PODE:** editar o `design-contract.json` ou o `artifact.html`; travar com qualquer regra em FAIL.
+
+---
+
+## Agente 15 — Spec Enricher
+
+### Papel
+Agente "e se?" — adiciona ao SPEC o que está fora do caminho feliz: estados transversais, casos de borda, lacunas de tratamento de erro. Diferente do Agente Analyze (que valida conformidade arquitetural), o Enricher **adiciona** robustez de cenário — os dois são complementares e rodam em ordem: `/new-spec` → `/enrich-spec` → `/review-arch [spec] analyze`.
+
+### Quando acionar
+Após um SPEC ser gerado pelo Agente Spec, antes do Analyze — tipicamente para SPECs com fluxos críticos de negócio (billing, auth, dados sensíveis) ou múltiplas integrações externas.
+
+### Disciplina de Validação
+**Contexto limpo obrigatório** (sessão nova, sem o histórico que gerou o SPEC) e **modelo ≥ modelo usado pelo Agente Spec** — mesma regra de Multi-Model Routing do Analyze/Review (ARCHITECTURE.md §17 Conflito 4).
+
+### Entrada obrigatória
+- SPEC completo gerado pelo Agente Spec
+
+### Saída esperada — relatório com 6 seções, nesta ordem
+1. **Estados transversais** — estados válidos para várias telas simultaneamente (loading global, erro de rede, sessão expirada)
+2. **Casos de borda** — cancelamento, permissão negada, recurso removido, falha de rede, timeout, dados vazios; cada um com cenário + gatilho + comportamento esperado + story/tela afetada
+3. **Conflitos a clarificar** — com opções A|B e recomendação
+4. **Lacunas de tratamento de erro** por operação crítica
+5. **Itens adiados** (fora do MVP, com motivo)
+6. **Resumo de ações** em tabela (ID | tipo | ação | status)
+
+### Regras
+- ≥1 caso de borda por fluxo crítico do SPEC.
+- Toda sugestão ancora em algo já declarado no SPEC — nunca inventa requisito novo do zero.
+- Adições que mudam escopo de produto voltam ao PRD/PROJECT.md (sinalizar, não incluir diretamente).
+- **NÃO reescreve o SPEC** — a incorporação dos itens aceitos é feita pelo Agente Spec, após decisão do desenvolvedor.
+
+### Limites de Escopo — Agente Spec Enricher
+
+**PODE:** ler o SPEC completo; gerar o relatório de 6 seções.
+**NÃO PODE:** editar o SPEC diretamente; aprovar ou reprovar o SPEC (isso é papel do Analyze); rodar na mesma sessão que gerou o SPEC.
 
 ---
 
@@ -1137,8 +1257,12 @@ Atualize o KNOWLEDGE.md com as novas entradas ao final.
 | Validar ideia/problema antes do primeiro SPEC | Agente Discovery | `/discover [ideia]` |
 | **Ciclo SPEC → Review** | | |
 | Nova funcionalidade solicitada | Agente Spec | `/new-spec [descrição]` |
+| Adicionar robustez de cenário a um SPEC (opcional, antes do Analyze) | Agente Spec Enricher | `/enrich-spec [spec]` |
 | SPEC aprovado, validar antes de implementar | Agente Analyze | `/review-arch [spec] analyze` |
 | SPEC aprovado + Analyze OK, iniciar SPRINT | Agente Implementation | `/impl-sprint [spec] [n]` |
+| **Design Visual (opcional — produtos novos ou features com UI)** | | |
+| Gerar briefing de design a partir do PROJECT.md/SPEC | Agente Design | `/design-ui [spec]` |
+| Travar o design (13 regras) após artifact.html + design-contract.json prontos | Agente Design Lock | `/lock-design [pasta-do-design]` |
 | SPRINT implementado, gerar testes | Agente Testing | `/test-sprint [spec] [n]` |
 | SPRINT + testes prontos, validar | Agente Review | `/review-arch [spec] [n]` |
 | SPRINT com impacto em banco | Agente Migration | `/migrate-sprint [spec] [n]` |

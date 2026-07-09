@@ -3,8 +3,8 @@
 Guia completo do Kit de Arquitetura SaaS para desenvolvimento com IA (vibe coding).
 Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 
-> **Versão de referência deste arquivo:** `v2.1.0` — última sincronização completa com o kit
-> **Versão atual do kit:** `v2.1.0` — consulte `CHANGELOG.md` para ver o que mudou desde então
+> **Versão de referência deste arquivo:** `v2.2.0` — última sincronização completa com o kit
+> **Versão atual do kit:** `v2.2.0` — consulte `CHANGELOG.md` para ver o que mudou desde então
 > ⚠️ Atualize este bloco ao sincronizar este arquivo com uma nova versão do kit.
 >
 > **Mudança fundamental em v2.0.0:** o kit deixou de ser apenas um conjunto de arquivos de metodologia regenerados via LLM e passou a ser um **harness reutilizável**, com templates físicos versionados (`harness/templates/`), libs importáveis (`harness/lib/{test-helpers,saas-core,observability}`) e bootstrap automatizado (`/bootstrap-saas`). Veja Seção 4.0.
@@ -63,7 +63,7 @@ Leia este arquivo antes de iniciar qualquer novo projeto SaaS com este kit.
 7. [Configurando os Agentes como Slash Commands](#7-configurando-os-agentes-como-slash-commands)
    - [O que são Slash Commands no Claude Code](#o-que-são-slash-commands-no-claude-code)
    - [Usando os arquivos prontos da pasta "Slash Commands"](#usando-os-arquivos-prontos-da-pasta-slash-commands)
-   - [Criando os comandos manualmente](#criando-os-10-comandos-do-kit)
+   - [Criando os comandos manualmente](#criando-os-comandos-manualmente-exemplo)
    - [Como usar os slash commands](#como-usar-os-slash-commands)
    - [Exemplo: AçãoPlus — Slash Commands configurados](#exemplo-açãoplus--slash-commands-configurados)
    - [Índice de Exemplos do AçãoPlus](#índice-de-exemplos-do-açãoplus-neste-guia)
@@ -388,14 +388,7 @@ O `AGENTS.md` inclui perfis de execução (Budget/Balanced/Quality) para control
 
 **Contexto mínimo por agente (economize tokens):**
 
-| Agente | Contexto obrigatório |
-|---|---|
-| Spec | `ARCHITECTURE.md` seções 0–3 + `SPEC_TEMPLATE.md` + `GLOSSARY.md` do projeto |
-| Analyze | SPEC completo + `ARCHITECTURE.md` seções 1 e 5 |
-| Implementation | `ARCHITECTURE.md` seções 0–5 + [SPRINT](#sprint) N do SPEC |
-| Testing | Código do SPRINT + cenários [GWT](#given-when-then-gwt) + `TESTING_GUIDE.md` |
-| Review | Código + testes + SPRINT N + `ARCHITECTURE.md` seções 1 e 5 |
-| Migration | Entidades do SPRINT + "Impacto em Banco" do SPEC + `ARCHITECTURE.md` seção 13 |
+Ver tabela canônica em `AGENTS.md` — seção "Contexto Mínimo por Agente (Token Efficiency)". Este guia não repete a tabela para evitar divergência; ela cobre todos os 15 agentes do kit (os 12 clássicos + Design, Design Lock e Spec Enricher, opcionais), não só os 6 do fluxo principal ilustrado acima.
 
 **Fluxo visual entre agentes:**
 
@@ -426,7 +419,7 @@ Você descreve a feature
 
 #### Exemplo: AçãoPlus — AGENTS.md
 
-Para o AçãoPlus, você usará todos os 12 agentes ao longo do desenvolvimento (6 agentes do ciclo SPEC→Review + Discovery, DevOps, Security Audit, SRE, API Docs, Migration/Forensics). O Agente Migration será acionado especialmente nos [SPRINTs](#sprint) 1 e 3, quando as tabelas `action_plans` e `tasks` forem criadas no banco.
+Para o AçãoPlus, você usará os 12 agentes clássicos ao longo do desenvolvimento (6 agentes do ciclo SPEC→Review + Discovery, DevOps, Security Audit, SRE, API Docs, Migration/Forensics). O Agente Migration será acionado especialmente nos [SPRINTs](#sprint) 1 e 3, quando as tabelas `action_plans` e `tasks` forem criadas no banco. O kit tem, ao todo, 15 agentes — os 3 adicionais (Design, Design Lock, Spec Enricher) são opcionais e usados apenas em produtos que adotam o pipeline de design visual (ver seção "Fluxo de Especificação Visual").
 
 ---
 
@@ -2159,11 +2152,48 @@ Sem o fechamento formal, você não sabe o que foi ou não foi implementado. Em 
 
 ---
 
+### Fluxo de Especificação Visual (opcional)
+
+Para produtos novos ou features com UI própria, o kit oferece um caminho adicional que formaliza a camada Presentation com um contrato de design máquina-legível e travamento determinístico — **sem substituir** o fluxo clássico, apenas complementando-o antes do `/impl-sprint` da Presentation.
+
+```
+/new-spec [descrição]                (clássico)
+  ↓
+/enrich-spec [spec]                  (opcional — casos de borda, sessão nova)
+  ↓
+/review-arch [spec] analyze          (clássico)
+  ↓
+/design-ui [spec]                    (opcional — gera DESIGN_BRIEFING.md)
+  ↓
+[ferramenta externa de design gera artifact.html + design-contract.json]
+  ↓
+/lock-design [pasta-do-design]       (opcional — 13 regras + manifest com hash)
+  ↓
+/impl-sprint [spec] [n]              (clássico — segue o design travado quando existir)
+  ↓
+/review-arch [spec] [n]              (clássico — confere fidelidade ao design travado)
+```
+
+**Quando usar cada caminho:**
+
+| Situação | Caminho recomendado |
+|---|---|
+| Feature isolada em produto existente, UI simples ou reaproveitando componentes já existentes | Caminho clássico — descreva a UI em texto na seção "Impacto em UX" do SPEC |
+| Produto novo com múltiplas telas, ou feature que introduz identidade visual/componentes novos | Caminho com Design + Design Lock |
+| Qualquer caminho, se a feature é P1 de domínio novo | Gate de Discovery se aplica primeiro (ver `/new-spec`) — independente do caminho de UI escolhido |
+
+**Regra de compatibilidade:** projetos que nunca rodam `/design-ui`/`/lock-design` continuam funcionando exatamente como antes — nenhum comando exige `design-manifest.json`. O único ponto de integração é condicional: `/impl-sprint` e o Agente Review só aplicam a checagem de fidelidade ao design quando esse arquivo existir e estiver `locked: true`.
+
+---
+
 ## 6. Comandos Claude Code — Referência Completa
 
 | Comando | Agente acionado | Quando usar | Contexto obrigatório a fornecer |
 |---|---|---|---|
 | `/new-spec [descrição]` | Agente Spec | Nova feature a especificar | `ARCHITECTURE.md` seções 0–3 + `SPEC_TEMPLATE.md` + `GLOSSARY.md` |
+| `/enrich-spec [spec]` | Agente Spec Enricher | Opcional, sessão nova, antes do Analyze | SPEC completo (contexto limpo) |
+| `/design-ui [spec]` | Agente Design | Opcional — feature/produto com UI formalizada | `PROJECT.md` (Identidade Visual) + SPEC (Impacto em UX) + `DESIGN_CONTRACT_SCHEMA.md` |
+| `/lock-design [pasta]` | Agente Design Lock | Após artifact.html + design-contract.json gerados | `artifact.html` + `design-contract.json` + `DESIGN_LOCK_CHECKLIST.md` |
 | `/review-arch [spec] analyze` | Agente Analyze | Antes do 1º [SPRINT](#sprint) (SPEC aprovado) | SPEC completo + `ARCHITECTURE.md` seções 1 e 5 |
 | `/impl-sprint [spec] [n]` | Agente Implementation | Implementar [SPRINT](#sprint) N | `ARCHITECTURE.md` seções 0–5 + [SPRINT](#sprint) N do SPEC |
 | `/test-sprint [spec] [n]` | Agente Testing | Após implementar [SPRINT](#sprint) N | Código do SPRINT + [GWT](#given-when-then-gwt) do SPRINT + `TESTING_GUIDE.md` |
@@ -2203,7 +2233,7 @@ Um slash command é um arquivo `.md` em `.claude/commands/` que:
 
 ### Usando os arquivos prontos da pasta "Slash Commands"
 
-Este kit já vem com todos os 17 comandos prontos para uso na pasta `Slash Commands/`. Para utilizá-los no seu projeto:
+Este kit já vem com todos os 20 comandos prontos para uso na pasta `Slash Commands/`. Para utilizá-los no seu projeto:
 
 **Passo 1:** Certifique-se de que a pasta `.claude/commands/` existe no seu projeto. Se não existir, crie-a:
 ```bash
@@ -2229,13 +2259,16 @@ cp /caminho/para/o/kit/Slash\ Commands/security-audit.md   .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/define-slo.md       .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/generate-api-docs.md .claude/commands/
 cp /caminho/para/o/kit/Slash\ Commands/retrospect.md       .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/bootstrap-saas.md   .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/update-kit.md       .claude/commands/
+cp /caminho/para/o/kit/Slash\ Commands/upgrade-kit.md      .claude/commands/
 ```
 
 **Passo 3:** Verifique que os arquivos foram copiados:
 ```bash
 ls .claude/commands/
 ```
-Você deve ver 17 arquivos: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`, `quick-fix.md`, `pause-session.md`, `resume-session.md`, `map-codebase.md`, `forensics-sprint.md`, `discover.md`, `init-devops.md`, `update-pipeline.md`, `security-audit.md`, `define-slo.md`, `generate-api-docs.md`, `retrospect.md`
+Você deve ver 20 arquivos: `new-spec.md`, `impl-sprint.md`, `review-arch.md`, `test-sprint.md`, `migrate-sprint.md`, `quick-fix.md`, `pause-session.md`, `resume-session.md`, `map-codebase.md`, `forensics-sprint.md`, `discover.md`, `init-devops.md`, `update-pipeline.md`, `security-audit.md`, `define-slo.md`, `generate-api-docs.md`, `retrospect.md`, `bootstrap-saas.md`, `update-kit.md`, `upgrade-kit.md`
 
 **Passo 4:** Para o CLAUDE.md inicial do seu projeto, use o template em `Slash Commands/CLAUDE.md` como base — copie, renomeie e preencha com os dados do seu projeto:
 ```bash
@@ -2245,9 +2278,9 @@ Depois abra `CLAUDE.md` no VS Code e preencha `[Nome do Projeto]`, as tecnologia
 
 ---
 
-### Criando os 10 Comandos do Kit
+### Criando os Comandos Manualmente (exemplo)
 
-Se preferir criar os arquivos manualmente em vez de copiar da pasta `Slash Commands/`, use o conteúdo abaixo.
+Se preferir criar os arquivos manualmente em vez de copiar da pasta `Slash Commands/`, use o conteúdo abaixo como exemplo (5 dos 20 comandos — os demais seguem o mesmo formato e estão prontos em `Slash Commands/`).
 
 **Localização:** `.claude/commands/[nome-do-comando].md`
 
@@ -2350,14 +2383,14 @@ Para que os arquivos do kit sejam incluídos automaticamente como contexto, adic
 ```markdown
 ## Contexto automático — leia estes arquivos antes de qualquer ação
 
-@ARCHITECTURE.md — Constitution do projeto (obrigatório em toda sessão)
+@ARCHITECTURE_DIGEST.md — Regras inegociáveis do projeto (obrigatório em toda sessão)
 @specs/[dominio-principal]/GLOSSARY.md — Vocabulário do domínio
 
 Quando acionar um agente via slash command, consulte AGENTS.md para o contexto mínimo
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
 ```
 
-**Nota sobre `@` no CLAUDE.md:** O prefixo `@` antes de um nome de arquivo instrui o Claude Code a incluir o conteúdo do arquivo no contexto automaticamente.
+**Nota sobre `@` no CLAUDE.md:** O prefixo `@` antes de um nome de arquivo instrui o Claude Code a incluir o conteúdo do arquivo no contexto automaticamente — por isso arquivos só necessários ocasionalmente (PROJECT.md, KNOWLEDGE.md, GIT_WORKFLOW.md, ARCHITECTURE.md completo) não devem usar `@`: use-o apenas para o que é obrigatório em toda sessão. Ver o template completo em `Slash Commands/CLAUDE.md`.
 
 ---
 

@@ -3,6 +3,8 @@
 Padrões arquiteturais específicos para SaaS. Complementa `ARCHITECTURE.md` (seção 15).
 Consulte este arquivo antes de modelar qualquer domínio multi-tenant, de billing ou com feature flags.
 
+> **Este é o documento completo, para leitura humana.** Para contexto de sessão de agente, use a skill `saas-patterns` (`Skills/saas-patterns/SKILL.md`) — carrega só o tema necessário (multi-tenant, billing, feature-flags ou LGPD) em vez do arquivo inteiro.
+
 ---
 
 ## Usando @harness/saas-core (harness v2.0+)

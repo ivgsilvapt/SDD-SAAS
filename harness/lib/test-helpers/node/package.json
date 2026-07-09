@@ -1,6 +1,6 @@
 {
   "name": "@harness/test-helpers",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Test helpers reutilizáveis para projetos SDD-SAAS: InMemoryRepository, TenantBuilder, FakeMailer",
   "main": "index.js",
   "types": "index.d.ts",

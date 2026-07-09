@@ -20,4 +20,6 @@ Regras obrigatórias:
 7. Não crie interfaces ou entidades que já existam em outro bounded context
 8. Pesquise arquivos existentes antes de criar qualquer arquivo novo
 
+**Se existir `design-manifest.json` com `locked: true` para este SPEC** (feature com UI formalizada via `/design-ui` + `/lock-design`): antes de implementar SPRINT de Presentation, abra o `artifact.html` e o `design-contract.json` travados e implemente a UI conforme as telas/ações/componentes declarados (`affectedComponentIds`, tokens de cor/tipografia) — não invente tela ou componente fora do contract sem registrar um `delta`. Os critérios de aceite do SPRINT continuam sendo os do SPEC; o design travado complementa, não substitui.
+
 Siga rigorosamente as regras do Agente Implementation definidas em AGENTS.md.

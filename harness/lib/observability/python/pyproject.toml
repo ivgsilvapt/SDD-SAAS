@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "harness-observability"
-version = "2.1.0"
+version = "2.2.0"
 description = "Observabilidade pré-configurada: logger (structlog), metrics (prometheus_client), correlation (contextvars), health endpoints (FastAPI)"
 requires-python = ">=3.11"
 dependencies = [

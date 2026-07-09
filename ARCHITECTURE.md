@@ -1,10 +1,13 @@
 # ARCHITECTURE.md
 
-> **Versão do kit:** v2.1.0 — consulte `CHANGELOG.md` para histórico de mudanças.
+> **Versão do kit:** v2.2.0 — consulte `CHANGELOG.md` para histórico de mudanças.
 
-Este documento é a **Constitution** deste SaaS. Deve ser fornecido à IA no início de cada sessão de vibe coding.
+Este documento é a **Constitution** deste SaaS — a fonte completa de regras arquiteturais.
+
+> **Para contexto de sessão, use `ARCHITECTURE_DIGEST.md`** (regras inegociáveis, ~1,5k tokens) em vez deste arquivo inteiro — exceto para os agentes **Analyze** e **Review**, que sempre leem as seções completas listadas em `AGENTS.md`. O digest nunca cria regra nova; toda regra dele existe aqui.
 
 **Arquivos complementares do kit:**
+- `ARCHITECTURE_DIGEST.md` — resumo de contexto de sessão (regras inegociáveis)
 - `AGENTS.md` — prompts dos agentes e fluxo SDD
 - `SPEC_TEMPLATE.md` — formato obrigatório dos SPECs
 - `TESTING_GUIDE.md` — estratégia de testes por camada
@@ -815,17 +818,9 @@ Middleware extrai tenantId do JWT
 
 ## 16. Otimização de Contexto para AI (Token Efficiency)
 
-Para minimizar custo de tokens ao usar AI agents, forneça apenas o contexto necessário por agente:
+Para minimizar custo de tokens ao usar AI agents, forneça apenas o contexto necessário por agente.
 
-| Agente | Contexto mínimo necessário |
-|---|---|
-| **Spec** | `ARCHITECTURE.md` seções 0–3 + `SPEC_TEMPLATE.md` + `GLOSSARY_TEMPLATE.md` do projeto + descrição da feature |
-| **Analyze** | SPEC completo + `ARCHITECTURE.md` seções 1 e 5 |
-| **Implementation Sprint 1** | `ARCHITECTURE.md` seções 0–5 + SPRINT 1 do SPEC |
-| **Implementation Sprint 2+** | `ARCHITECTURE.md` seções 0–5 + SPRINT N do SPEC + interfaces de repositório do domínio existentes |
-| **Review** | Código gerado do SPRINT + seção do SPRINT (com GWT) + `ARCHITECTURE.md` seções 1 e 5 |
-| **Testing** | Código gerado do SPRINT + cenários GWT do SPRINT + `TESTING_GUIDE.md` |
-| **Migration** | Entidades do SPRINT 1 + schema atual do banco + `ARCHITECTURE.md` seção 13 |
+> **Contexto mínimo por agente: ver tabela canônica em `AGENTS.md` — seção "Contexto Mínimo por Agente (Token Efficiency)".** Não duplique essa tabela aqui — `AGENTS.md` cobre os 15 agentes e é mantida atualizada; esta seção trata apenas das regras gerais de carregamento de contexto abaixo.
 
 **Regras de ouro:**
 - Nunca forneça a codebase inteira para um agente — forneça apenas os arquivos do SPRINT atual
@@ -894,21 +889,38 @@ Estes dois princípios atuam em domínios diferentes e **nunca colidem quando ap
 
 ---
 
-**Conflito 3 — KISS vs. Clean Architecture (Trivial Query Path)**
+**Conflito 3 — KISS vs. Clean Architecture (Trivial Path)**
 
-Features simples de leitura pura, sem regra de negócio e sem cruzamento de Bounded Contexts, podem usar o **Trivial Query Path** para evitar cerimônia desnecessária:
+Features simples, sem regra de negócio e sem cruzamento de Bounded Contexts, podem usar o **Trivial Path** para evitar cerimônia desnecessária. Existem dois níveis, conforme a mudança é leitura ou escrita:
 
+**Nível 1 — `trivial-query: true` (leitura pura):**
 - O Agente Spec pode marcar um SPEC como `trivial-query: true` no Contexto Arquitetural.
 - SPECs `trivial-query` **pulam o SPRINT 1 (Domínio)** — não há entidade de domínio a modelar.
 - O SPRINT 2 usa um **read model direto** (interface tipada, sem entidade de domínio): `controller → query handler → read model`. A interface ainda existe no Application — apenas a entidade de domínio é omitida.
 
-**Critérios cumulativos para `trivial-query`** — todos devem ser verdadeiros:
+Critérios cumulativos — todos devem ser verdadeiros:
 1. É leitura pura — não modifica estado
 2. Zero regra de negócio (sem invariante, sem cálculo, sem validação de negócio)
 3. Dados de um único Bounded Context
 4. Sem cruzamento de entidades de domínio
 
-> **Se houver dúvida sobre qualquer critério, use a arquitetura completa.** O Trivial Query Path é uma exceção justificada, não um atalho padrão.
+**Nível 2 — `spec-lite: true` (CRUD simples, incluindo escrita):**
+
+Para escrita simples que não se qualifica como `trivial-query` (ex: usuário atualiza o próprio avatar) mas ainda não tem invariante de negócio real — flag adicional, mesmo mecanismo:
+- O Agente Spec propõe `spec-lite: true` quando os 3 critérios abaixo forem cumulativamente verdadeiros; **a decisão final é do desenvolvedor**.
+- SPECs `spec-lite` usam um único SPRINT combinado (Domínio + Application + Infra + Presentation) em vez da divisão em 4-5 SPRINTs — o SPEC continua sendo o mesmo `SPEC_TEMPLATE.md`, sem template paralelo.
+- Analyze e Testing formais são pulados; o **Review continua obrigatório** e sempre confere isolamento de tenant.
+
+Critérios cumulativos para `spec-lite`:
+1. CRUD simples (leitura ou escrita) sem invariante de negócio, cálculo ou máquina de estados
+2. Não cruza Bounded Contexts
+3. Cria no máximo 4 arquivos novos
+
+**Exclusão explícita:** `trivial-query` e `spec-lite` nunca se aplicam a billing, autenticação/autorização, ou qualquer feature que toque dados PII — esses sempre usam o caminho completo, mesmo que pareçam simples.
+
+**Regra de escalonamento:** se durante a implementação de um SPEC `spec-lite` surgir uma invariante de negócio não prevista, ou o SPRINT ultrapassar 4 arquivos novos, **pare** e promova o SPEC para o caminho completo (o conteúdo do SPEC-lite vira a seção "Visão Geral" do SPEC completo).
+
+> **Se houver dúvida sobre qualquer critério, use a arquitetura completa.** O Trivial Path é uma exceção justificada, não um atalho padrão.
 
 ---
 
@@ -1285,3 +1297,11 @@ Quais restrições (técnicas, de negócio, regulatórias) estavam presentes?]
 - ADRs aceitos **nunca são editados** — são superseded por um novo ADR se a decisão mudar
 - O `STATE.md` pode referenciar um ADR com `ver docs/adr/XXXX` para decisões estruturais
 - O Agente Spec deve consultar ADRs existentes antes de propor padrões alternativos
+
+---
+
+## 23. Rastreabilidade de Especificação
+
+Convenções de ID (US, FR, NFR, tela, ação, componente, dado, API, delta) e a cadeia obrigatória `US → FR/NFR → tela → ação → apiExpectation → tabela` estão documentadas em `TRACEABILITY_GUIDE.md` — consulte-o ao criar um SPEC que afete a camada Presentation ou que participe de um `design-contract.json` travado (ver `DESIGN_CONTRACT_SCHEMA.md`).
+
+Todo SPEC derivado de um design travado deve citar, na seção "Impacto em UX", os IDs de tela e ação de origem. IDs nunca são renumerados — a regra de imutabilidade do `TRACEABILITY_GUIDE.md` é um princípio arquitetural do processo, não apenas uma convenção de nomenclatura: um ID reaproveitado quebra a rastreabilidade entre SPEC, design travado e sprint sem aviso.

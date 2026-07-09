@@ -6,6 +6,35 @@ Versionamento semântico: MAJOR.MINOR.PATCH — MINOR para novas features, PATCH
 
 ---
 
+## [2.2.0] — 2026-07-09
+
+### Adicionado
+- **`ARCHITECTURE_DIGEST.md`** — resumo de contexto de sessão (~1,5k tokens) com as regras inegociáveis do `ARCHITECTURE.md`; carregado via `@` no CLAUDE.md em vez do arquivo completo (exceção: Analyze e Review sempre leem as seções completas).
+- **3 novos agentes (12 → 15)**: Agente Design (`/design-ui`), Agente Design Lock (`/lock-design`) e Agente Spec Enricher (`/enrich-spec`) — pipeline opcional de design visual travado e enriquecimento de SPEC com casos de borda. Não bloqueiam o fluxo clássico do kit.
+- **`TRACEABILITY_GUIDE.md`** — convenções de ID (US, FR, NFR, tela, ação, componente, dado, API, delta) e a cadeia `US → FR/NFR → tela → ação → apiExpectation → tabela`.
+- **`DESIGN_CONTRACT_SCHEMA.md`** e **`DESIGN_LOCK_CHECKLIST.md`** — schema do `design-contract.json` e as 13 regras de travamento de design (com manifest de hashes SHA-256).
+- **`Scripts/validate-design-lock.py`** — validação programática das regras estruturais (1–6, 8, 9, 11, 12) do Design Lock, no mesmo padrão de `Scripts/validate-kit.py`.
+- **`Skills/saas-patterns/`** e **`Skills/testing-guide/`** — progressive disclosure (SKILL.md roteador + `references/` por tema) para os antigos `SAAS_PATTERNS.md` e `TESTING_GUIDE.md`, que permanecem como fonte completa na raiz.
+- **ARCHITECTURE.md §23** — "Rastreabilidade de Especificação", referenciando o `TRACEABILITY_GUIDE.md`.
+- **`SPEC_TEMPLATE.md`** — seção "Impacto em UX" ganhou campos de ID estruturado e tabela de rastreabilidade (aditivo — texto livre continua válido sem design travado).
+- **`PROJECT_TEMPLATE.md`** — subseção "Identidade Visual" (cores hex, fonte, plataforma) para alimentar o Agente Design.
+- **Gate de Discovery em `/new-spec`** — para features P1 de domínio novo, exige `DISCOVERY.md` com status "problema validado" antes de gerar o SPEC (override `sem-discovery` registrado em `STATE.md`).
+- **Extensão do Trivial Path (ARCHITECTURE.md §17 Conflito 3)** — nova flag `spec-lite: true` para CRUD simples de escrita sem invariante (complementa `trivial-query: true`, que seguia restrito a leitura pura).
+- **Poda/arquivamento em `/retrospect`** — proposta de mover decisões encerradas e lições absorvidas para `STATE_ARCHIVE.md`/`KNOWLEDGE_ARCHIVE.md` quando `STATE.md` ativo ultrapassar ~150 linhas (sempre aprovada pelo desenvolvedor, nunca automática).
+- **3 novos slash commands**: `design-ui.md`, `lock-design.md`, `enrich-spec.md`.
+
+### Alterado
+- **`Slash Commands/CLAUDE.md`** (template) — `@ARCHITECTURE.md` substituído por `@ARCHITECTURE_DIGEST.md`; `PROJECT.md`, `KNOWLEDGE.md` e `GIT_WORKFLOW.md` movidos para uma seção "Contexto sob demanda" sem `@` (eram marcados como "opcionais" mas carregavam sempre).
+- **`AGENTS.md`** — passa a ser a fonte única da tabela "Contexto Mínimo por Agente"; `ARCHITECTURE.md` §16 e `ORIENTACAO.md` apontam para ela em vez de duplicá-la.
+- **`Slash Commands/impl-sprint.md`** e o Agente Review — checagem condicional de fidelidade ao design travado quando `design-manifest.json` existir com `locked: true`.
+- **`ORIENTACAO.md`** — corrigida contagem desatualizada de comandos (17/10 → 20 antes desta versão, 23 após); nova seção "Fluxo de Especificação Visual" descrevendo quando usar o caminho clássico vs. o caminho com Design Lock.
+- **Bumps de versão** — VERSION (2.1.0 → 2.2.0), ARCHITECTURE.md, ORIENTACAO.md e os 6 manifests de libs sincronizados em 2.2.0.
+
+### Corrigido
+- **`ORIENTACAO.md`** — referências desatualizadas ("17 comandos", "Criando os 10 Comandos do Kit" mostrando só 5) corrigidas para refletir os 20 comandos existentes antes desta versão; CLAUDE.md de exemplo embutido sincronizado com o template canônico.
+
+---
+
 ## [2.1.0] — 2026-05-02
 
 ### Adicionado

@@ -59,19 +59,26 @@ Remova seções marcadas como opcionais se não se aplicarem. Não deixe campos 
 > Descreva quais telas existentes são modificadas e quais são novas.
 > Liste os fluxos de usuário afetados e os pontos de entrada.
 > Não é necessário wireframe detalhado — é suficiente descrever o fluxo textualmente.
+> **Se existir `design-contract.json` travado para esta feature** (ver `DESIGN_CONTRACT_SCHEMA.md`), preencha também os IDs estruturados abaixo — convenções em `TRACEABILITY_GUIDE.md`. Sem design travado, deixe os campos de ID como "n/a" e use apenas a descrição textual.
 
 **Telas afetadas:**
-- [ex: `/dashboard` — adiciona card de resumo de planos ativos]
-- [ex: `/action-plans/new` — nova tela de criação]
+- [ex: `/dashboard` (tela: `dashboard`) — adiciona card de resumo de planos ativos]
+- [ex: `/action-plans/new` (tela: `action-plans-new`) — nova tela de criação]
 
 **Fluxo principal:**
-[ex: Usuário acessa `/action-plans` → clica em "Novo plano" → preenche formulário 5W2H → salva → retorna à listagem com plano recém-criado visível]
+[ex: Usuário acessa `/action-plans` → clica em "Novo plano" (ação: `create-action-plan`) → preenche formulário 5W2H → salva → retorna à listagem com plano recém-criado visível]
 
 **Fluxos de erro:**
 [ex: Campos obrigatórios vazios → mensagem de validação inline, foco no primeiro campo inválido]
 
 **Design tokens / componentes novos:**
-[ex: nenhum — usa componentes existentes do Design System | ex: novo componente `ActionStatusBadge`]
+[ex: nenhum — usa componentes existentes do Design System | ex: novo componente `ActionStatusBadge` (comp-slug: `action-status-badge`)]
+
+**Rastreabilidade estruturada** *(preencher apenas se houver `design-contract.json` travado)*:
+
+| US | FR | Tela | Ação | API | Tabela |
+|---|---|---|---|---|---|
+| US-01 | FR-01 | [tela-slug] | [action-slug] | [api-slug] | [tabela] |
 
 ---
 

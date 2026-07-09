@@ -1,6 +1,6 @@
 # KNOWLEDGE.md — Registro de Lições Aprendidas
 
-> **Este arquivo é append-only — nunca delete entradas, apenas adicione novas.**
+> **Este arquivo é append-only — nunca delete entradas.** "Append-only" significa nunca apagar; **mover** uma entrada para `KNOWLEDGE_ARCHIVE.md` quando ela for absorvida pela prática (ex: virou regra automática no código ou no ARCHITECTURE.md) é permitido e recomendado — só o `/retrospect` propõe essa movimentação, sempre com aprovação do desenvolvedor item a item.
 > A IA lê este arquivo antes de cada sessão para evitar repetir erros já resolvidos.
 > Atualize sempre que uma sessão revelar algo não-óbvio sobre o codebase, uma biblioteca ou uma regra de negócio.
 

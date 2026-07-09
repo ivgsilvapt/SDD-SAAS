@@ -41,8 +41,16 @@ Análise obrigatória:
    Se identificar algo que deveria estar no ARCHITECTURE.md ou AGENTS.md mas não está,
    liste como sugestão — não altere os arquivos do kit diretamente, apenas sinalize.
 
+6. Poda e arquivamento de STATE.md / KNOWLEDGE.md (obrigatório verificar, opcional executar):
+   - Conte as linhas ativas de STATE.md. Se ultrapassar **150 linhas**, alerte o desenvolvedor e proponha mover para `STATE_ARCHIVE.md`: decisões arquiteturais já superadas/resolvidas (Seção "Decisões Arquiteturais") e entradas do log de sessões (Seção "Log de Sessões") anteriores ao milestone atual e ao imediatamente anterior.
+   - Revise KNOWLEDGE.md: se alguma lição registrada já foi totalmente absorvida pela prática (ex: virou regra automática no ARCHITECTURE.md, ou um adapter testado elimina o gotcha), proponha movê-la para `KNOWLEDGE_ARCHIVE.md`.
+   - **Regra de segurança:** a poda é sempre uma proposta sua, item a item — o desenvolvedor aprova ou rejeita cada movimentação antes de você editar qualquer arquivo. Nunca apague uma entrada; mova-a (append-only continua valendo — arquivar não é apagar).
+   - Se `STATE_ARCHIVE.md` ou `KNOWLEDGE_ARCHIVE.md` não existirem no projeto, crie-os reaproveitando a mesma estrutura de seções de `STATE_TEMPLATE.md` / `KNOWLEDGE_TEMPLATE.md`.
+   - Agentes de diagnóstico (ex: `/forensics-sprint`) podem consultar os arquivos de archive ao investigar problemas antigos — mencione isso ao criar o arquivo pela primeira vez.
+
 Ao final:
 - Atualize KNOWLEDGE.md com as novas entradas
+- Se a poda do passo 6 foi aprovada pelo desenvolvedor: mova as entradas para STATE_ARCHIVE.md / KNOWLEDGE_ARCHIVE.md
 - Registre no STATE.md que a retrospectiva foi executada (data e milestone)
 
 Siga as diretrizes do Agente Retrospectiva definidas em AGENTS.md.

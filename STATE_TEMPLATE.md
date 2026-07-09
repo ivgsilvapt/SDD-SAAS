@@ -3,6 +3,7 @@
 > **Como usar:** Copie este arquivo para `STATE.md` na raiz do seu projeto SaaS.
 > O CLAUDE.md já o carrega automaticamente em toda sessão (`@STATE.md`).
 > Atualize após qualquer sessão em que uma decisão não-óbvia foi tomada.
+> **Limite operacional:** mantenha o STATE.md ativo com até ~150 linhas. O `/retrospect` verifica esse limite e propõe mover decisões encerradas e sessões antigas para `STATE_ARCHIVE.md` (mesma estrutura de seções deste arquivo). Arquivar não é apagar — apenas mova o conteúdo para preservar a memória de longo prazo sem pagar o custo de tokens em toda sessão.
 
 ---
 

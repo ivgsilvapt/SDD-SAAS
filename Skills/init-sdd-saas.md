@@ -92,6 +92,7 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 
 **Arquivos de referência arquitetural (raiz):**
 - `ARCHITECTURE.md`
+- `ARCHITECTURE_DIGEST.md`
 - `AGENTS.md`
 - `SPEC_TEMPLATE.md`
 - `TESTING_GUIDE.md`
@@ -103,6 +104,9 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 - `HANDOFF_TEMPLATE.md`
 - `CODEBASE_MAPPING_GUIDE.md`
 - `GIT_WORKFLOW.md`
+- `TRACEABILITY_GUIDE.md`
+- `DESIGN_CONTRACT_SCHEMA.md`
+- `DESIGN_LOCK_CHECKLIST.md`
 - `KNOWLEDGE_TEMPLATE.md` → copiar como `KNOWLEDGE.md` (inicia vazio com apenas os cabeçalhos e as linhas de exemplo — o conteúdo real será preenchido durante o uso)
 
 **Slash commands (pasta `.claude/commands/`):**
@@ -126,6 +130,9 @@ Usando o caminho do kit fornecido (`$ARGUMENTS`), copie os seguintes arquivos pa
 - `Slash Commands/update-kit.md`       → `.claude/commands/update-kit.md`
 - `Slash Commands/bootstrap-saas.md`   → `.claude/commands/bootstrap-saas.md`
 - `Slash Commands/upgrade-kit.md`      → `.claude/commands/upgrade-kit.md`
+- `Slash Commands/enrich-spec.md`      → `.claude/commands/enrich-spec.md`
+- `Slash Commands/design-ui.md`        → `.claude/commands/design-ui.md`
+- `Slash Commands/lock-design.md`      → `.claude/commands/lock-design.md`
 
 Use Read para ler cada arquivo do kit e Write para criá-lo no destino.
 
@@ -178,15 +185,20 @@ Leia ARCHITECTURE.md antes de qualquer ação. Este projeto segue Clean Architec
 - Ao tomar decisão arquitetural não-óbvia, registre em STATE.md antes de fechar a sessão
 
 ## Contexto automático — leia estes arquivos antes de qualquer ação
-@ARCHITECTURE.md — Constituição do projeto (obrigatório em toda sessão)
+@ARCHITECTURE_DIGEST.md — Regras inegociáveis do projeto, resumo de sessão (obrigatório em toda sessão)
 @STATE.md — Memória persistente: decisões, bloqueios, ideias adiadas (obrigatório em toda sessão)
 @specs/[BOUNDED_CONTEXT_PRINCIPAL]/GLOSSARY.md — Vocabulário do domínio
-@PROJECT.md — Visão e propósito do produto (opcional, recomendado para o Agente Spec)
-@KNOWLEDGE.md — Lições acumuladas de sessões anteriores (opcional — se existir, leia antes de implementar)
-@GIT_WORKFLOW.md — Estratégia de branches por SPEC (leia uma vez no início do projeto, não é necessário em toda sessão)
 
 Quando acionar um agente via slash command, consulte AGENTS.md para o contexto mínimo
 daquele agente e inclua apenas os arquivos necessários — não inclua o kit inteiro.
+
+## Contexto sob demanda — leia apenas quando a regra abaixo se aplicar
+
+Estes arquivos não usam `@` — leia-os explicitamente quando a situação pedir:
+- `PROJECT.md` — Agente Spec: leia antes de criar um SPEC novo.
+- `KNOWLEDGE.md` — Qualquer agente: leia antes de implementar em área com problema já registrado (se existir).
+- `GIT_WORKFLOW.md` — Leia uma vez, no início do projeto.
+- `ARCHITECTURE.md` (completo) — Agente Analyze e Agente Review: sempre leem as seções completas listadas em `AGENTS.md`.
 
 ## Comandos disponíveis
 

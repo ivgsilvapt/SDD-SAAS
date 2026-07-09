@@ -129,6 +129,25 @@ Tecnologias escolhidas para este projeto e o racional de cada uma.
 
 ---
 
+## Identidade Visual *(preencher se o produto tiver UI própria — usado pelo Agente Design)*
+
+> Especificidade acima de tudo — valores exatos, não descrições vagas ("azul" não serve, `#2563EB` serve).
+
+| Token | Valor | Uso |
+|---|---|---|
+| Cor primária | [ex: `#2563EB`] | Ações principais, links, elementos de destaque |
+| Cor de fundo | [ex: `#0F172A`] | Fundo da aplicação |
+| Cor de card/superfície | [ex: `#1E293B`] | Cards, painéis, modais |
+| Cor de status positivo | [ex: `#22C55E`] | Sucesso, ativo, concluído |
+| Cor de status de alerta | [ex: `#EF4444`] | Erro, bloqueio, cancelamento |
+| Fonte | [ex: Inter, sans-serif] | Corpo de texto e títulos |
+
+**Plataforma:** [ex: Web responsivo | App mobile nativo | Desktop Electron]
+
+**Referências visuais:** [ex: "Painel principal inspirado no dashboard do Linear — densidade alta, cards com borda sutil"]
+
+---
+
 ## Mapa de Bounded Contexts
 
 > *Liste os contextos de domínio deste SaaS. Cada um terá seu próprio GLOSSARY.md.*

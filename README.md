@@ -32,19 +32,22 @@ Em ~30 segundos você terá: estrutura `src/`, Dockerfile, CI/CD, devcontainer, 
 ```
 SDD-SAAS/
 ├── ARCHITECTURE.md          # Constituição arquitetural (Clean Architecture + DDD)
-├── AGENTS.md                # 12 agentes do fluxo SDD (Spec, Analyze, Implementation, Testing, Review, Migration, ...)
-├── ORIENTACAO.md            # Guia completo do harness (3160 linhas)
+├── ARCHITECTURE_DIGEST.md   # Resumo de sessão (~1,5k tokens) — carregado via @ no CLAUDE.md
+├── AGENTS.md                # 15 agentes do fluxo SDD (12 clássicos + Design, Design Lock, Spec Enricher)
+├── ORIENTACAO.md            # Guia completo do harness
 ├── SAAS_PATTERNS.md         # Padrões SaaS (multi-tenancy, billing, RBAC)
 ├── TESTING_GUIDE.md         # Estratégia de testes
+├── TRACEABILITY_GUIDE.md    # Convenções de ID e cadeia US → FR → tela → API → tabela
+├── DESIGN_CONTRACT_SCHEMA.md, DESIGN_LOCK_CHECKLIST.md  # Pipeline opcional de design travado
 ├── *_TEMPLATE.md            # Templates: SPEC, GLOSSARY, STATE, PROJECT, KNOWLEDGE, HANDOFF, DISCOVERY, ROADMAP
 ├── VERSION, CHANGELOG.md    # Versionamento semântico
 ├── harness/
 │   ├── scripts/             # bootstrap-saas.sh, upgrade-kit.sh, setup.sh
 │   ├── templates/           # docker/, ci/{github,gitlab}/, env/, git-hooks/, github/, devcontainer/, vscode/
 │   └── lib/                 # test-helpers, saas-core, observability — para Node.js e Python
-├── Slash Commands/          # 20 slash commands prontos (/new-spec, /impl-sprint, /review-arch, ...)
-├── Skills/                  # Skills instaláveis: bootstrap-saas, upgrade-kit, init-sdd-saas, arch-guide
-└── Scripts/validate-kit.py  # Validação automatizada de consistência interna
+├── Slash Commands/          # 23 slash commands prontos (/new-spec, /impl-sprint, /review-arch, /design-ui, ...)
+├── Skills/                  # Skills instaláveis: bootstrap-saas, upgrade-kit, init-sdd-saas, arch-guide, saas-patterns, testing-guide
+└── Scripts/                 # validate-kit.py (consistência do kit), validate-design-lock.py (regras estruturais do Design Lock)
 ```
 
 ---
@@ -137,7 +140,7 @@ Princípios que estruturam o código gerado pelos agentes do kit. Agrupados por 
 |---|---|
 | [ORIENTACAO.md](ORIENTACAO.md) | Guia completo: conceitos, fluxo, exemplos, checklists |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Constituição arquitetural — regras invioláveis |
-| [AGENTS.md](AGENTS.md) | Os 12 agentes do fluxo SDD e seus contratos |
+| [AGENTS.md](AGENTS.md) | Os 15 agentes do fluxo SDD e seus contratos |
 | [SAAS_PATTERNS.md](SAAS_PATTERNS.md) | Padrões específicos de SaaS (multi-tenancy, billing, RBAC) |
 | [TESTING_GUIDE.md](TESTING_GUIDE.md) | Estratégia de testes (unit, integration, e2e) |
 | [GIT_WORKFLOW.md](GIT_WORKFLOW.md) | Estratégia de branches por SPEC |
@@ -152,6 +155,12 @@ python Scripts/validate-kit.py
 ```
 
 Roda 5 checks: slash commands ↔ CLAUDE.md, referências do `init-sdd-saas`, referências em ORIENTACAO.md, consistência de versão, e estrutura completa do harness (templates/libs/scripts).
+
+Para projetos que usam o pipeline opcional de Design Lock, valide o `design-contract.json` gerado:
+
+```bash
+python Scripts/validate-design-lock.py <projeto>/design-contract.json --user-stories US-01 US-02
+```
 
 ---
 
