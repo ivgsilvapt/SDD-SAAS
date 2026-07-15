@@ -39,6 +39,12 @@ $RECYCLE.BIN/
 .idea/
 *.iml
 
+# Claude
+.claude/
+
+# graphify (grafo gerado, rebuildável via /graphify)
+graphify-out/
+
 # Vim / Emacs
 *.swp
 *.swo
